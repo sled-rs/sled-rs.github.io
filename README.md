@@ -65,10 +65,6 @@ We also support [merge operators](https://github.com/spacejam/sled/wiki/merge-op
 * pluggable conflict detection and resolution strategies for [PA/EL](https://en.wikipedia.org/wiki/PACELC_theorem) systems
 * multiple collection types like tables, BKD trees, Merkle trees, bloom filters, etc... unified under a single transactional and operational domain
 
-Want to prioritize a specific feature or get commercial help with using sled in your project? [Ferrous Systems](https://ferrous-systems.com) provides commercial support for sled, and can work with you to solve a wide variety of storage problems across the latency-throughput, consistency, and price performance spectra. [Get in touch!](mailto:sled@ferrous-systems.com)
-
-[![Ferrous Systems](https://ferrous-systems.com/images/ferrous-logo-text.svg)](https://ferrous-systems.com/)
-
 # architecture
 
 lock-free tree on a lock-free pagecache on a lock-free log. the pagecache scatters
