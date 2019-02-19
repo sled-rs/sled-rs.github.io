@@ -30,21 +30,20 @@ tree.del(&k);
 tree.flush();
 ```
 
-We also support [merge operators](https://github.com/spacejam/sled/wiki/merge-operators)!
-
 # features
 
 * API similar to a threadsafe `BTreeMap<Vec<u8>, Vec<u8>>`
-* fully atomic single-key operations, supports CAS
-* zero-copy reads
-* subscription/watch semantics on key prefixes
-* multiple keyspace support
-* merge operators
-* forward and reverse iterators
-* a crash-safe monotonic ID generator capable of generating 75-125 million ID's per second
-* [zstd](https://github.com/facebook/zstd) compression (use the `compression` build feature)
-* cpu-scalable lock-free implementation
+* ACID, constant crash and concurrency testing
 * SSD-optimized log-structured storage
+* cpu-scalable lock-free implementation
+* [LSM tree](https://en.wikipedia.org/wiki/Log-structured_merge-tree)-like write performance
+  with [traditional B+ tree](https://en.wikipedia.org/wiki/B%2B_tree)-like read performance
+* multiple keyspace support
+* subscription/watch semantics on key prefixes
+* forward, reverse, range iterators
+* a crash-safe monotonic ID generator capable of generating 125+ million IDs per second
+* [zstd](https://github.com/facebook/zstd) compression (use the `compression` build feature)
+* [merge operators](https://github.com/spacejam/sled/wiki/merge-operators)
 
 # goals
 
@@ -55,15 +54,9 @@ We also support [merge operators](https://github.com/spacejam/sled/wiki/merge-op
 
 # plans
 
-* [LSM tree](https://en.wikipedia.org/wiki/Log-structured_merge-tree)-like write performance
-  with [traditional B+ tree](https://en.wikipedia.org/wiki/B%2B_tree)-like read performance
 * MVCC, serializable transactions, and snapshots
 * forward-compatible binary format
-* concurrent snapshot delta generation and recovery
 * first-class access to replication stream
-* consensus protocol for [PC/EC](https://en.wikipedia.org/wiki/PACELC_theorem) systems
-* pluggable conflict detection and resolution strategies for [PA/EL](https://en.wikipedia.org/wiki/PACELC_theorem) systems
-* multiple collection types like tables, BKD trees, Merkle trees, bloom filters, etc... unified under a single transactional and operational domain
 
 # architecture
 
