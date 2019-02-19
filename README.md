@@ -4,7 +4,7 @@
 [![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled)
 [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
 
-A modern embedded database.
+A modern embedded database. Written in Rust, usable on servers and phones from any C-compatible language.
 
 ```rust
 use sled::Db;
@@ -68,16 +68,6 @@ We also support [merge operators](https://github.com/spacejam/sled/wiki/merge-op
 Want to prioritize a specific feature or get commercial help with using sled in your project? [Ferrous Systems](https://ferrous-systems.com) provides commercial support for sled, and can work with you to solve a wide variety of storage problems across the latency-throughput, consistency, and price performance spectra. [Get in touch!](mailto:sled@ferrous-systems.com)
 
 [![Ferrous Systems](https://ferrous-systems.com/images/ferrous-logo-text.svg)](https://ferrous-systems.com/)
-
-# known issues, warnings
-
-* the on-disk format is going to change in non-forward compatible ways
-  before the `1.0.0` release! after that, we will always support
-  forward migrations.
-* quite young, should be considered unstable for the time being
-* the C API is likely to change rapidly
-* writepath is not well optimized yet. readpath is essentially wait-free and zero-copy.
-* 32 bit architectures [require Rust nightly with the `nightly` feature enabled](https://github.com/spacejam/sled/issues/145).
 
 # architecture
 
