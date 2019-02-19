@@ -1,1 +1,4 @@
 theme: jekyll-theme-minimal
+title: sled
+description: a modern embedded database
+logo: art/tree_face.png
