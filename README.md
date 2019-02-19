@@ -37,7 +37,7 @@ tree.flush();
 * SSD-optimized log-structured storage
 * cpu-scalable lock-free implementation
 * [LSM tree](https://en.wikipedia.org/wiki/Log-structured_merge-tree)-like write performance
-  with [traditional B+ tree](https://en.wikipedia.org/wiki/B%2B_tree)-like read performance
+  with [B+ tree](https://en.wikipedia.org/wiki/B%2B_tree)-like read performance
 * multiple keyspace support
 * subscription/watch semantics on key prefixes
 * forward, reverse, range iterators
