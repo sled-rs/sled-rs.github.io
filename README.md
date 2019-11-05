@@ -25,25 +25,28 @@ for kv in tree.range(k..) {}
 tree.remove(&k);
 
 // block until all operations are on-disk
-// (flush_async also available to get a Future)
 tree.flush();
+
+// or if using async
+tree.flush_async().await;
 ```
 
 # features
 
-* API similar to a threadsafe `BTreeMap<Vec<u8>, Vec<u8>>`
-* Fully-serializable multi-keyspace transactions
-* ACID, constant crash and concurrency testing
-* SSD-optimized log-structured storage
-* cpu-scalable lock-free implementation
-* [LSM tree](https://en.wikipedia.org/wiki/Log-structured_merge-tree)-like write performance
-  with [B+ tree](https://en.wikipedia.org/wiki/B%2B_tree)-like read performance
-* multiple keyspace support
-* subscription/watch semantics on key prefixes
-* forward, reverse, range iterators
-* a crash-safe monotonic ID generator capable of generating 125+ million IDs per second
-* [zstd](https://github.com/facebook/zstd) compression (use the `compression` build feature)
+* [API](https://docs.rs/sled) similar to a threadsafe `BTreeMap<[u8], [u8]>`
+* fully serializable multi-key and multi-Tree [transactions](https://docs.rs/sled/latest/sled/struct.Tree.html#method.transaction) involving up to 69 separate Trees!
+* fully atomic single-key operations, supports [compare and swap](https://docs.rs/sled/latest/sled/struct.Tree.html#method.compare_and_swap)
+* zero-copy reads
+* [write batch support](https://docs.rs/sled/latest/sled/struct.Tree.html#method.apply_batch)
+* [subscription/watch semantics on key prefixes](https://github.com/spacejam/sled/wiki/reactive-semantics)
+* [multiple keyspace/Tree support](https://docs.rs/sled/latest/sled/struct.Db.html#method.open_tree)
 * [merge operators](https://github.com/spacejam/sled/wiki/merge-operators)
+* forward and reverse iterators
+* a crash-safe monotonic [ID generator](https://docs.rs/sled/latest/sled/struct.Db.html#method.generate_id) capable of generating 75-125 million unique ID's per second
+* [zstd](https://github.com/facebook/zstd) compression (use the `compression` build feature)
+* cpu-scalable lock-free implementation
+* SSD-optimized log-structured storage
+* prefix encoded keys reducing the storage cost of complex keys
 
 # goals
 
@@ -52,17 +55,10 @@ tree.flush();
 1. don't wake up operators. bring reliability techniques from academia into real-world practice.
 1. don't use so much electricity. our data structures should play to modern hardware's strengths.
 
-# architecture
 
-lock-free tree on a lock-free pagecache on a lock-free log. the pagecache scatters
-partial page fragments across the log, rather than rewriting entire pages at a time
-as B+ trees for spinning disks historically have. on page reads, we concurrently
-scatter-gather reads across the log to materialize the page from its fragments.
-check out the [architectural outlook](https://github.com/spacejam/sled/wiki/sled-architectural-outlook)
-for a more detailed overview of where we're at and where we see things going!
+# references
 
-# References
-
+* [architectural outlook](https://github.com/spacejam/sled/wiki/sled-architectural-outlook)
 * [The Bw-Tree: A B-tree for New Hardware Platforms](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/bw-tree-icde2013-final.pdf)
 * [LLAMA: A Cache/Storage Subsystem for Modern Hardware](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/llama-vldb2013.pdf)
 * [Cicada: Dependably Fast Multi-Core In-Memory Transactions](http://15721.courses.cs.cmu.edu/spring2018/papers/06-mvcc2/lim-sigmod2017.pdf)
