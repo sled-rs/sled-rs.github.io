@@ -11,18 +11,12 @@ use sled::Db;
 
 let tree = Db::open(path)?;
 
-tree.insert(k, v1);
-assert_eq!(tree.get(&k), Ok(Some(v1)));
+tree.insert(k, v);
+assert_eq!(tree.get(&k), Ok(Some(v)));
 
 for kv in tree.range(k..) {}
 
 tree.remove(&k);
-
-// block until all operations are on-disk
-tree.flush();
-
-// or if using async
-tree.flush_async().await;
 ```
 
 # features
