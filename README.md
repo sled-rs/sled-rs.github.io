@@ -36,6 +36,7 @@ tree.flush();
 # features
 
 * API similar to a threadsafe `BTreeMap<Vec<u8>, Vec<u8>>`
+* Fully-serializable multi-keyspace transactions
 * ACID, constant crash and concurrency testing
 * SSD-optimized log-structured storage
 * cpu-scalable lock-free implementation
