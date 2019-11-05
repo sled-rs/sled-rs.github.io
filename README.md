@@ -11,17 +11,13 @@ use sled::Db;
 
 let tree = Db::open(path)?;
 
-// set and get
 tree.insert(k, v1);
 assert_eq!(tree.get(&k), Ok(Some(v1)));
 
-// compare and swap
 tree.compare_and_swap(k, Some(v1), Some(v2));
 
-// scan forward
 for kv in tree.range(k..) {}
 
-// deletion
 tree.remove(&k);
 
 // block until all operations are on-disk
@@ -47,13 +43,6 @@ tree.flush_async().await;
 * cpu-scalable lock-free implementation
 * SSD-optimized log-structured storage
 * prefix encoded keys reducing the storage cost of complex keys
-
-# goals
-
-1. don't make the user think. the interface should be obvious.
-1. don't surprise users with performance traps.
-1. don't wake up operators. bring reliability techniques from academia into real-world practice.
-1. don't use so much electricity. our data structures should play to modern hardware's strengths.
 
 
 # references
