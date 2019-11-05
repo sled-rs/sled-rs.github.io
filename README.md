@@ -14,8 +14,6 @@ let tree = Db::open(path)?;
 tree.insert(k, v1);
 assert_eq!(tree.get(&k), Ok(Some(v1)));
 
-tree.compare_and_swap(k, Some(v1), Some(v2));
-
 for kv in tree.range(k..) {}
 
 tree.remove(&k);
