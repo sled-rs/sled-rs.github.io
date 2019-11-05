@@ -21,9 +21,7 @@ assert_eq!(tree.get(&k), Ok(Some(v1)));
 tree.compare_and_swap(k, Some(v1), Some(v2));
 
 // scan forward
-let mut iter = tree.range(k..);
-assert_eq!(iter.next(), Some(Ok((k, v2))));
-assert_eq!(iter.next(), None);
+for kv in tree.range(k..) {}
 
 // deletion
 tree.remove(&k);
