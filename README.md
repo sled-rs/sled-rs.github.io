@@ -11,8 +11,12 @@ use sled::Db;
 
 let tree = Db::open(path)?;
 
-tree.insert(k, v);
-assert_eq!(tree.get(&k), Ok(Some(v)));
+tree.insert(k, v)?;
+
+assert_eq!(
+  tree.get(&k),
+  Ok(Some(v)),
+);
 
 for kv in tree.range(k..) {}
 
