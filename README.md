@@ -1,10 +1,8 @@
 # sled
 
-| key | value |
-| :-: | --- |
-| [documentation](https://docs.rs/sled) | [![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled) |
-| [chat about databases with us](https://discord.gg/Z6VsXds) | [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds) |
-| [help us build what you want to use](https://opencollective.com/sled) | [![Open Collective backers](https://img.shields.io/opencollective/backers/sled)](https://opencollective.com/sled) |
+[![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled)
+[![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
+[![Open Collective backers](https://img.shields.io/opencollective/backers/sled)](https://opencollective.com/sled)
 
 A modern embedded database. Written in Rust, usable on servers and phones from any C-compatible language.
 
