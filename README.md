@@ -9,18 +9,12 @@ A modern embedded database. Written in Rust, usable on servers and phones from a
 ```rust
 use sled::Db;
 
-let tree = Db::open(path)?;
-
-tree.insert(k, v)?;
-
-assert_eq!(
-  tree.get(&k),
-  Ok(Some(v)),
-);
-
-for kv in tree.range(k..) {}
-
-tree.remove(&k);
+let db = Db::open(path)?;   // as in fs::open
+db.insert(k, v)?;           // as in BTreeMap::insert
+db.get(&k)?;                // as in BTreeMap::get
+for kv in db.range(k..) {}  // as in BTreeMap::range
+db.remove(&k)?;             // as in BTreeMap::remove
+drop(db);                   // fsync and close file
 ```
 
 # features
