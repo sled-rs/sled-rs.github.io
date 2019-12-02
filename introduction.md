@@ -4,25 +4,71 @@
 [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
 [![Open Collective backers](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
 
-A modern embedded database. Written in Rust, usable on servers and phones from any C-compatible language.
+Welcome to the introduction for the sled database! We'll keep this short and sweet.
 
-```rust
-use sled::Db;
+Sled can be thought of as a BTreeMap<Vec<u8>, Vec<u8>> that stores its data on disk.
+Sled is an [embedded database](https://en.wikipedia.org/wiki/Embedded_database).
 
-let db = Db::open(path)?;   // as in fs::open
-db.insert(k, v)?;           // as in BTreeMap::insert
-db.get(&k)?;                // as in BTreeMap::get
-for kv in db.range(k..) {}  // as in BTreeMap::range
-db.remove(&k)?;             // as in BTreeMap::remove
-drop(db);                   // fsync and close file
+Embedded databases are useful in several cases:
+
+* you want to store data on disk, without facing [the complexity of files](https://danluu.com/file-consistency/)
+* you want to be simple, without operating an external database
+* you want to be fast, without paying network costs
+* using disk storage as a building block in your system
+
+# Let's get going!
+
+Open your rust project, or create one with `cargo new sled-intro`.
+
+In `Cargo.toml`, add sled to the dependencies section:
+
+```toml
+[dependencies]
+sled = "0.29"
 ```
 
-# features
+Now, in your Rust code:
 
-* [API](https://docs.rs/sled) similar to a threadsafe `BTreeMap<[u8], [u8]>`
+```rust
+fn main() -> sled::Result<()> {
+    let path = "my_storage_directory";
+
+    // works like std::fs::open
+    let db = sled::Db::open(path)?;
+
+    let key = "my key";
+    let value = vec![42];
+
+    dbg!(
+        db.insert(key, value)?, // as in BTreeMap::insert
+        db.get(key)?,           // as in BTreeMap::get
+        db.remove(key)?,        // as in BTreeMap::remove
+    );
+
+    Ok(())
+}
+```
+
+This will create a new directory, `my_storage_directory`, write
+a new item into the database inside, retrieve the item, and then remove it.
+
+The key and value types can be a `Vec<u8>`, a `[u8]`, or a `str`.
+These will be converted to the sled `IVec` type automatically.
+`IVec` is an `Arc<[u8]>` that will not allocate if the value is small.
+
+All sled operations return a `sled::Result` that should never
+be ignored. If this is an `Err`, it means a serious unexpected issue
+has happened. Operations that may fail in expected ways, like
+`compare_and_swap`, have a return type of `sled::Result<CompareAndSwapResult>`
+where the expected failure is nested inside the unexpected failure.
+This allows users to use the try operator on every sled operation, and
+locally reason about errors that are likely to be encountered.
+This allows your error handling logic to take full advantage of Rust's exhaustive pattern matching.
+
+# additional features
+
 * fully serializable multi-key and multi-Tree [transactions](https://docs.rs/sled/latest/sled/struct.Tree.html#method.transaction) involving up to 69 separate Trees!
 * fully atomic single-key operations, supports [compare and swap](https://docs.rs/sled/latest/sled/struct.Tree.html#method.compare_and_swap)
-* zero-copy reads
 * [write batch support](https://docs.rs/sled/latest/sled/struct.Tree.html#method.apply_batch)
 * [subscription/watch semantics on key prefixes](https://github.com/spacejam/sled/wiki/reactive-semantics)
 * [multiple keyspace/Tree support](https://docs.rs/sled/latest/sled/struct.Db.html#method.open_tree)
@@ -30,17 +76,3 @@ drop(db);                   // fsync and close file
 * forward and reverse iterators
 * a crash-safe monotonic [ID generator](https://docs.rs/sled/latest/sled/struct.Db.html#method.generate_id) capable of generating 75-125 million unique ID's per second
 * [zstd](https://github.com/facebook/zstd) compression (use the `compression` build feature)
-* cpu-scalable lock-free implementation
-* SSD-optimized log-structured storage
-* prefix encoded keys reducing the storage cost of complex keys
-
-
-# references
-
-* [architectural outlook](https://github.com/spacejam/sled/wiki/sled-architectural-outlook)
-* [The Bw-Tree: A B-tree for New Hardware Platforms](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/bw-tree-icde2013-final.pdf)
-* [LLAMA: A Cache/Storage Subsystem for Modern Hardware](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/llama-vldb2013.pdf)
-* [Cicada: Dependably Fast Multi-Core In-Memory Transactions](http://15721.courses.cs.cmu.edu/spring2018/papers/06-mvcc2/lim-sigmod2017.pdf)
-* [The Design and Implementation of a Log-Structured File System](https://people.eecs.berkeley.edu/~brewer/cs262/LFS.pdf)
-
-<p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
