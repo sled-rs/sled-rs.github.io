@@ -4,7 +4,8 @@
 [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
 [![Open Collective backers](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
 
-A modern embedded database. Written in Rust, usable on servers and phones from any C-compatible language.
+A modern [embedded database](https://en.wikipedia.org/wiki/Embedded_database).
+Written in Rust, usable on servers and phones from any C-compatible language.
 
 ```rust
 use sled::Db;
@@ -17,27 +18,12 @@ db.remove(&k)?;             // as in BTreeMap::remove
 drop(db);                   // fsync and close file
 ```
 
-# what's an embedded database?
+Embedded databases are useful in several cases:
 
-An embedded database is a library that performs storage operations.
-Why not use files directly?
-[It's basically impossible to get right, even for experts](https://danluu.com/file-consistency/).
-An embedded database can store data on disk more quickly and with far fewer bugs than if you were to use files directly.
-Despite the simple API, it often takes years of hard work to get the underlying storage system into a nice place.
-
-Embedded databases may use techniques like:
-
-* transactions that allow data to be read and mutated by multiple threads at the same time without causing data races
-* lock-free indexing that allows data to be accessed without blocking other threads
-* recovery techniques that avoid corruption even when the database crashes while writing data
-* caching techniques that are scan-resistant
-* deserialized object caching that facilitates transactions on objects directly, without [paying hefty serialization or networking costs required to interact with external databases](https://ai.google/research/pubs/pub48030)
-
-# popular uses of embedded databases
-
-* app state storage without an external database
-* high-performance or transactional shared state
-* larger-than-memory datasets such as higher-level databases, queues
+* you want to store data on disk, without facing [the complexity of files](https://danluu.com/file-consistency/)
+* you want to be simple, without operating an external database
+* you want to be fast, without paying network costs
+* using disk storage as a building block in your system
 
 # sled features
 
@@ -64,5 +50,3 @@ Embedded databases may use techniques like:
 * [Cicada: Dependably Fast Multi-Core In-Memory Transactions](http://15721.courses.cs.cmu.edu/spring2018/papers/06-mvcc2/lim-sigmod2017.pdf)
 * [The Design and Implementation of a Log-Structured File System](https://people.eecs.berkeley.edu/~brewer/cs262/LFS.pdf)
 * [TinyLFU: A Highly Efficient Cache Admission Policy](https://arxiv.org/abs/1512.00727)
-
-<p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
