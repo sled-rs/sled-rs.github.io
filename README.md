@@ -8,9 +8,7 @@ A modern [embedded database](https://en.wikipedia.org/wiki/Embedded_database).
 Written in Rust, usable on servers and phones from any C-compatible language.
 
 ```rust
-use sled::Db;
-
-let db = Db::open(path)?;   // as in fs::open
+let db = sled::open(path)?; // as in fs::open
 db.insert(k, v)?;           // as in BTreeMap::insert
 db.get(&k)?;                // as in BTreeMap::get
 for kv in db.range(k..) {}  // as in BTreeMap::range

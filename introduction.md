@@ -23,7 +23,7 @@ In `Cargo.toml`, add sled to the dependencies section:
 
 ```toml
 [dependencies]
-sled = "0.29"
+sled = "0.30.2"
 ```
 
 Now, in your Rust code:
@@ -34,7 +34,7 @@ fn main() -> sled::Result<()> {
     let path = "my_storage_directory";
 
     // works like std::fs::open
-    let db = sled::Db::open(path)?;
+    let db = sled::open(path)?;
 
     // key and value types can be `Vec<u8>`, `[u8]`, or `str`.
     let key = "my key";
