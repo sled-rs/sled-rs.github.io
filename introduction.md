@@ -2,7 +2,7 @@
 
 [![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled)
 [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
-[![Open Collective backers](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
+[![sponsors](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
 
 Welcome to the introduction for the sled embedded database! We'll keep this short and sweet.
 

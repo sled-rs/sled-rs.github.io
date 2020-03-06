@@ -1,5 +1,10 @@
 # Experiences with Other Systems
 
+[![github](https://img.shields.io/github/stars/spacejam/sled.svg?style=social)](https://github.com/spacejam/sled)
+[![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled)
+[![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
+[![sponsors](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
+
 sled is motivated by the experiences gained while working with other stateful systems, outlined below.
 
 Most of the points below are learned from being burned, rather than delighted.

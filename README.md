@@ -1,8 +1,9 @@
 # sled
+
 [![github](https://img.shields.io/github/stars/spacejam/sled.svg?style=social)](https://github.com/spacejam/sled)
 [![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled)
 [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
-[![Open Collective backers](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
+[![sponsors](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
 
 A modern [embedded database](https://en.wikipedia.org/wiki/Embedded_database).
 Written in Rust, usable on servers and phones from any C-compatible language.
