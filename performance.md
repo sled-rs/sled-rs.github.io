@@ -8,15 +8,17 @@
 ## contents
 
 * [overview](#overview)
+* [experimental design](#experimental-design)
 * [rust](#rust)
 * [cpus](#cpus)
+  * [frequency scaling](#frequency-scaling)
 * [memory](#memory)
 * [threads](#threads)
+* [async tasks](#async-tasks)
 * [syscalls](#syscalls)
 * [USE Method](#use-method)
 * [universal scalability law](#universal-scalability-law)
 * [queue theory](#queue-theory)
-* [experimental design](#experimental-design)
 * [flamegraphs](#flamegraphs)
 * [cachegrind](#cachegrind)
 * [massif](#massif)
@@ -27,6 +29,29 @@
 
 This guide showcases some basic information for getting
 started with performance-sensitive engineering work.
+
+It is hoped that this will provide enough background
+to be successful in optimizing the sled database when
+suboptimal behavior is discovered.
+
+These materials are extracted from Tyler Neely's
+Rust workshops.
+
+## experimental design
+
+We seek to make sled faster.
+
+sled may be faster if:
+* your web browser is closed
+* your laptop is plugged in
+* you run it on a larger machine
+* you run it on a machine with [frequency scaling](#frequency-scaling) disabled with a custom kernel
+
+Many factors influence our measurements. Is your
+web browser running? Is your laptop plugged in?
+Did you just
+
+Further reading: Quantitative Analysis of Computer Systems by Clement Leung.
 
 ## rust
 
@@ -41,6 +66,7 @@ See [rust/54878](https://github.com/rust-lang/rust/issues/54878)
 for the current status of the effort to support this. It's a big
 deal. There's a reason we still use Fortran libraries in much of
 our linear algebra (and implicitly, our machine learning) libraries.
+
 
 ## cpus
 
@@ -65,9 +91,44 @@ to run, causing the CPU to run the new workload at
 a diminished frequency, and making it appear to
 perform worse.
 
-Output of the `i7z` command, available in most linux
-package managers, useful for introspecting Intel CPU
-frequencies:
+Frequency scaling must be accounted for in your performance
+analysis. We must take multiple measurements.
+
+Also, we must be careful about the residual effects of compilation.
+Rust has a lot of nice compilation options that will
+trade more compilation time for faster runtime. When the compiler
+works harder, it can often cause the CPU to scale down more
+aggressively to account for the heat being generated,
+and it will make it seem like a workload is slower
+even though it is much faster, but more heavily throttled.
+
+Bad:
+
+```
+* time compile and run workload 1
+* time compile and run workload 2
+* compare total times
+```
+
+Better:
+
+```
+* compile workload 1
+* compile workload 2
+* cooldown
+* time workload 1
+* time workload 2
+* time workload 1
+* time workload 2
+...
+* time workload 1
+* time workload 2
+* view distribution of results
+```
+
+If you have an intel CPU, you can use the `i7z` command,
+to see what your cores are currently doing. It is
+ available in most linux package managers.
 
 ```
 Cpu speed from cpuinfo 1607.00Mhz
@@ -95,13 +156,22 @@ C6, C7 = Everything in C3 + core state saved to last level cache, C7 is deeper t
   Above values in table are in percentage over the last 1 sec
 ```
 
+###
+
+
 ## memory
+### numa
 ## threads
 ## syscalls
+## filesystems
+## disks
+## networks
 ## USE Method
 ## universal scalability law
 ## queue theory
-## experimental design
+
+Further reading: Quantitative Analysis of Computer Systems by Clement Leung.
+
 ## flamegraphs
 ## cachegrind
 ## massif
