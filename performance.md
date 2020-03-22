@@ -5,9 +5,27 @@
 [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
 [![sponsors](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
 
+## overview
+
+This guide contains basic information for getting
+started with performance-sensitive engineering.
+
+It is hoped that this will provide enough background
+to be successful in optimizing the sled database when
+suboptimal behavior is observed. It would also be
+nice if some Rust folks paid more attention to this
+stuff. So much effort is being wasted due to
+misdirected performance efforts.
+
+These materials are based on Tyler Neely's
+Rust workshop content, and have been inspired
+by the writings of Dmitry Vyukov, Mark Callaghan,
+Brendan Gregg, and others.
+
 ## contents
 
-* [overview](#overview)
+* [principles](#principles)
+* [metrics](#metrics)
 * [experimental design](#experimental-design)
 * [rust](#rust)
 * [cpus](#cpus)
@@ -16,6 +34,7 @@
 * [threads](#threads)
 * [async tasks](#async-tasks)
 * [syscalls](#syscalls)
+* [hardware effects](#hardware-effects)
 * [USE Method](#use-method)
 * [universal scalability law](#universal-scalability-law)
 * [queue theory](#queue-theory)
@@ -24,49 +43,212 @@
 * [massif](#massif)
 * [dhat](#dhat)
 
+## principles
 
-## overview
+The only thing that matters is that real
+programs on real hardware see statistically
+significant improvements in real cost metrics
+like total cost of ownership, responsiveness,
+and etc... If a metric doesn't help a human,
+it's just a vanity pursuit that may make
+the important metrics worse due to
+underinvestment.
 
-This guide showcases some basic information for getting
-started with performance-sensitive engineering work.
+One of the most frequently overlooked
+performance metrics is the cognitive
+complexity of a codebase. If engineers
+experience high friction when trying to
+change a codebase, all efforts to make
+the code faster will be dramatically
+hindered. A codebase that is a joy
+for engineers to work with is a codebase
+that will see the most long-term optimizations.
+Codebases that burn people out will not
+see long-term success unless they receive
+tons of funding to replace people who
+flee the project after short periods of
+activity.
 
-It is hoped that this will provide enough background
-to be successful in optimizing the sled database when
-suboptimal behavior is discovered.
+"Experts write baby code." - Zarko Milosevic
 
-These materials are extracted from Tyler Neely's
-Rust workshops.
+So, we must pick our meaningful metrics,
+measure them after considerate experemental
+design, make decisions, repeat.
+
+## metrics
+
+Performance metrics come in many shapes and sizes.
+Usually, a workload will have a few of these
+that matter more than others. Many projects
+are incentivized to make throughput high
+because they know it will lead to more adoption
+after users apply and publish meaningless
+benchmarks. sled's throughput is pretty damn
+high already, so now we should be spending
+more effort on memory usage, worst-case latency,
+and worst-case disk utilization.
+
+Here are some other metrics that are interesting
+for sled:
+
+* Single operation worst case latency: this
+  is our primary metric because we are
+  prioritizing transactional workloads above
+  analytical workloads. We want users to
+  have reliably responsive access to their
+  data.
+* Peak memory utilization: we want a high
+  fraction of all allocated memory to be
+  made up of user data that is likely
+  to be accessed. This lets us keep our
+  cache hit rates higher given the available
+  memory, reducing the latency of more
+  operations.
+* Recovery latency. How long does it take
+  to start the database after crashing?
+* Peak memory throughput: we want to avoid
+  short-lived allocations that may be more
+  efficiently stored on the stack. This also
+  allows us to have more predictable latency
+  as our memory usage grows, because most
+  allocators start to degrade in various ways
+  as they are pushed harder.
+* Bulk-loading throughput: we want users to
+  be able to insert large amounts of data
+  into sled quickly so they can start using it.
+* Peak disk space utilization: we don't want
+  sled to use 10x the space that user data
+  requires. It's normal for databases to
+  use 1-2x the actual data size because
+  of various defragmenting efforts, but
+  we reduce the number of deployment
+  possibilities when this "space amplification"
+  is high.
+* Peak disk throughput: there is a trade-off
+  between new data that can be written and
+  the amount of disk throughput we spend
+  rewriting old data to defragment the storage
+  file and use less total space. If we are careful
+  about minimizing the amount of data that we
+  write at all, we can increase our range of
+  choice between smaller files and higher write
+  throughput.
+* Disk durability: the more we write data at all,
+  the sooner our drives will die. We should avoid
+  moving data around too much. A huge amount of
+  the work of building a high quality storage
+  engine boils down to treating the disk kindly,
+  often at the expense of write throughput.
 
 ## experimental design
 
-We seek to make sled faster.
+We seek to make sled more efficient by changing code.
 
-sled may be faster if:
-* your web browser is closed
-* your laptop is plugged in
-* you run it on a larger machine
-* you run it on a machine with [frequency scaling](#frequency-scaling) disabled with a custom kernel
+Running the same program twice will result
+in two different measurments. But the difference
+in performance is NOT necessarily because the
+code is faster for realistic workloads.
+[CPU frequency scaling](#frequency-scaling)
+is a major source of variance, for instance.
 
-Many factors influence our measurements. Is your
-web browser running? Is your laptop plugged in?
-Did you just
+If you spend more time compiling and applying
+more optimizations, the program may run slower
+if executed immediately after compilation,
+because frequency scaling has kicked in
+already.
+
+Many code changes that run faster in microbenchmarks
+will run more slowly when combined with
+real business logic, because the microbenchmark
+causes CPU caches to behave differently.
+
+Often, code that runs faster in microbenchmarks
+causes CPUs to heat up more, causing frequency
+scaling to kick in more, and result in a slower
+system when running for longer periods of time.
+Faster code often consumes more heat, as well.
+Maybe a 3% throughput improvement is not worth
+a 100% power consumption increase.
+
+Experimental design is about trying to
+extract useful measurements despite known
+and unknown sources of variance.
+
+Only through careful measurement can we
+increase our confidence that our observed
+measurments correspond to the changes we
+introduced in code.
+
+Failing to exercise experimental discipline
+will result in a lot of "optimizations"
+that are assumed to improve the situation
+but in fact only add complexity to the
+codebase, reducing maintainability, and
+making it harder to properly measure
+future optimizations.
+
+It's quite easy to justify a performance regression
+as an improvement when you see a workload
+running faster after changing code. But code
+changes are far from the only things that
+impact how long it takes to run a program,
+or how fast the code runs.
+
+There are a large number of known and unknown
+factors that will introduce variance into
+workload measurements.
+Even if we run a program twice in a row,
+we will experience variance in our observed
+latencies and throughputs.
+
+There are lots of ways to make sled faster in a
+single run of a workload, and we need to
+make sure that when we take measurements,
+we are not actually measuring the effects
+of things that do not relate to the code
+that we are trying to optimize.
+
+
+#### Bad:
+
+```
+* time compile and run workload 1
+* time compile and run workload 2
+* compare total times
+```
+
+#### Better:
+
+```
+* compile workload 1
+* compile workload 2
+* cooldown
+* time workload 1
+* time workload 2
+* time workload 1
+* time workload 2
+...
+* time workload 1
+* time workload 2
+* view distribution of results
+```
+
+#### Further reading:
+
+* The Art of Computer Systems Performance Analysis by Raj Jain
+
+
+## USE Method
+
+http://www.brendangregg.com/usemethod.html
+
+## universal scalability law
+
+http://smalldatum.blogspot.com/2019/10/usl-universal-scalability-law-is-good.html
+
+## queue theory
 
 Further reading: Quantitative Analysis of Computer Systems by Clement Leung.
-
-## rust
-
-Rust's borrowing rules ensure that there will only exist
-a single mutable reference to some memory at a time.
-
-As this is taken advantage of, it allows the Rust compiler
-to approach Fortran-level performance (much faster than
-C/C++ in many cases).
-
-See [rust/54878](https://github.com/rust-lang/rust/issues/54878)
-for the current status of the effort to support this. It's a big
-deal. There's a reason we still use Fortran libraries in much of
-our linear algebra (and implicitly, our machine learning) libraries.
-
 
 ## cpus
 
@@ -102,29 +284,6 @@ aggressively to account for the heat being generated,
 and it will make it seem like a workload is slower
 even though it is much faster, but more heavily throttled.
 
-Bad:
-
-```
-* time compile and run workload 1
-* time compile and run workload 2
-* compare total times
-```
-
-Better:
-
-```
-* compile workload 1
-* compile workload 2
-* cooldown
-* time workload 1
-* time workload 2
-* time workload 1
-* time workload 2
-...
-* time workload 1
-* time workload 2
-* view distribution of results
-```
 
 If you have an intel CPU, you can use the `i7z` command,
 to see what your cores are currently doing. It is
@@ -156,6 +315,19 @@ C6, C7 = Everything in C3 + core state saved to last level cache, C7 is deeper t
   Above values in table are in percentage over the last 1 sec
 ```
 
+
+This list has been extracted from [Kobzol's wonderful hardware effects github repo](https://github.com/Kobzol/hardware-effects).
+[Ben Titzer - What Spectre Means for Language Implementors](https://www.youtube.com/watch?v=FGX-KD5Nh2g)
+
+### 4k-aliasing
+
+When you read a value that was just written, CPUs will
+
+### bandwidth saturation
+
+### branch misprediction
+
+###
 ###
 
 
@@ -166,13 +338,34 @@ C6, C7 = Everything in C3 + core state saved to last level cache, C7 is deeper t
 ## filesystems
 ## disks
 ## networks
-## USE Method
-## universal scalability law
-## queue theory
+## hardware effects
 
-Further reading: Quantitative Analysis of Computer Systems by Clement Leung.
+Modern servers and laptops are
+
+
+
+
+
 
 ## flamegraphs
 ## cachegrind
 ## massif
 ## dhat
+
+http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.html
+http://www.brendangregg.com/offcpuanalysis.html
+
+## rust
+
+Rust's borrowing rules ensure that there will only exist
+a single mutable reference to some memory at a time.
+
+As this is taken advantage of, it allows the Rust compiler
+to approach Fortran-level performance (much faster than
+C/C++ in many cases).
+
+See [rust/54878](https://github.com/rust-lang/rust/issues/54878)
+for the current status of the effort to support this. It's a big
+deal. There's a reason we still use Fortran libraries in much of
+our linear algebra (and implicitly, our machine learning) libraries.
+
