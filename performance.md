@@ -20,7 +20,8 @@ misdirected performance efforts.
 These materials are based on Tyler Neely's
 Rust workshop content, and have been inspired
 by the writings of Dmitry Vyukov, Mark Callaghan,
-Brendan Gregg, and others.
+Brendan Gregg, Martin Thompson, Pedro Ramalhete
+and others.
 
 ## contents
 
@@ -99,10 +100,16 @@ end up with unmaintainable macho codebases.
 ## USE Method
 
 The [USE Method](http://www.brendangregg.com/usemethod.html)
-is a high-level approach for
+is a high-level approach for thinking about systems that
+we are trying to improve or debug.
+
+The key ideas are:
+
+* Systems are made up of subsystems that request
 
 
 Further reading:
+
 * http://www.brendangregg.com/usemethod.html
 * Systems Performance: Enterprise and the Cloud by
   Brendan Gregg (buy the book just to read chapter 2: Methodology)
