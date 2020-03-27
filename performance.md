@@ -25,17 +25,34 @@ Brendan Gregg, and others.
 ## contents
 
 * [principles](#principles)
+* [USE Method](#use-method)
 * [metrics](#metrics)
 * [experimental design](#experimental-design)
 * [rust](#rust)
 * [cpus](#cpus)
   * [frequency scaling](#frequency-scaling)
+  * [4k aliasing](#4k-aliasing)
+  * [bandwidth saturation](#bandwidth-saturation)
+  * [branch misprediction](#branch-misprediction)
+  * [branch target misprediction](#branch-target-misprediction)
+  * [cache conflicts](#cache-conflicts)
+  * [cache/memory hierarchy bandwidth](#cache/memory-hierarchy-bandwidth)
+  * [data dependencies](#data-dependencies)
+  * [denormal floating point numbers](#denormal-floating-point-numbers)
+  * [DRAM refresh interval](#DRAM-refresh-interval)
+  * [false sharing](#false-sharing)
+  * [hardware prefetching](#hardware-prefetching)
+  * [memory-bound program](#memory-bound-program)
+  * [misaligned accesses](#misaligned-accesses)
+  * [non-temporal stores](#non-temporal-stores)
+  * [software prefetching](#software-prefetching)
+  * [store buffer capacity](#store-buffer-capacity)
+  * [write combining](#write-combining)
 * [memory](#memory)
 * [threads](#threads)
 * [async tasks](#async-tasks)
 * [syscalls](#syscalls)
 * [hardware effects](#hardware-effects)
-* [USE Method](#use-method)
 * [universal scalability law](#universal-scalability-law)
 * [queue theory](#queue-theory)
 * [flamegraphs](#flamegraphs)
@@ -49,7 +66,7 @@ The only thing that matters is that real
 programs on real hardware see statistically
 significant improvements in real cost metrics
 like total cost of ownership, responsiveness,
-and etc... If a metric doesn't help a human,
+etc... If a metric doesn't help a human,
 it's just a vanity pursuit that may make
 the important metrics worse due to
 underinvestment.
@@ -74,6 +91,21 @@ activity.
 So, we must pick our meaningful metrics,
 measure them after considerate experemental
 design, make decisions, repeat.
+
+Our unmeasured assumptions are incorrect.
+Optimizing without measuring is how you
+end up with unmaintainable macho codebases.
+
+## USE Method
+
+The [USE Method](http://www.brendangregg.com/usemethod.html)
+is a high-level approach for
+
+
+Further reading:
+* http://www.brendangregg.com/usemethod.html
+* Systems Performance: Enterprise and the Cloud by
+  Brendan Gregg (buy the book just to read chapter 2: Methodology)
 
 ## metrics
 
@@ -238,9 +270,6 @@ that we are trying to optimize.
 * The Art of Computer Systems Performance Analysis by Raj Jain
 
 
-## USE Method
-
-http://www.brendangregg.com/usemethod.html
 
 ## universal scalability law
 
