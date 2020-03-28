@@ -63,7 +63,6 @@ and others.
 * [syscalls](#syscalls)
 * [hardware effects](#hardware-effects)
 * [universal scalability law](#universal-scalability-law)
-* [queue theory](#queue-theory)
 * [flamegraphs](#flamegraphs)
 * [cachegrind](#cachegrind)
 * [massif](#massif)
@@ -220,8 +219,8 @@ If we have 1000 requests arriving per second
 at an exponential distribution (as opposed to one
 arriving each millisecond on the dot), our
 system actually needs to process requests
-faster than one each millisecond. [Queue
-theory](#queue-theory) tells us that as
+faster than one each millisecond. Queue
+theory tells us that as
 our arrival rate approaches our processing
 rate, our queue depth approaches infinity.
 Nobody's got that kind of time to lay
@@ -255,7 +254,7 @@ the utilization drops, along with the throughput.
 Having things waiting to go in a queue is a
 common way to increase throughput.
 
-But waiting is bad for latency.
+But waiting (saturation) is bad for latency.
 All other things being equal, sending more
 requests to a system will cause latency to
 suffer because the chance that a request
@@ -274,14 +273,104 @@ to be fast, or if we want the system to generally
 handle many requests per second, with some being
 quite slow.
 
-Any time somebody tells you a scheduling technique
-increases throughput while also decreasing latency,
-you should be extremely skeptical. Unless
-there is fundamentally different work happening under
-the hood, this is not a realistic claim.
-
 If you want to improve both latency and throughput,
 you need to make the unit of work cheaper to perform.
+
+Different systems will have different relationships
+between utilization and saturation. Network adapters
+are often designed to be able to keep receiving more
+and more work and avoid saturation until relatively
+high utilization. Other devices, like spinning disks,
+will start saturating quite quickly, because the work
+causes other work to get slower by needing to drag
+the disk spindle to another physical location before
+it's able to handle the request. Here's a place
+where smart scheduling can make a huge difference for
+the relationship between utilization and saturation.
+
+Further reading:
+
+* http://www.brendangregg.com/usemethod.html
+* Systems Performance: Enterprise and the Cloud by
+  Brendan Gregg (buy the book just to read chapter 2: Methodology)
+* Quantitative Analysis of Computer Systems by Clement
+  Leung - awesome intro to queue theory.
+
+
+#### latency pitfalls
+
+If you're measuring latency for a large number
+of requests, there are a number of ways that you
+can derive meaning from the measurements.
+
+The one that many people reach for immediately
+is average. But the average is not very interesting
+for computer systems because it hides the impact
+of outliers.
+
+Some people claim that the geometric mean
+instead of the arithmetic mean is a better
+choice for some metrics, but for reasoning
+about highly discrete systems (nearly
+everything in the world of systems)
+it's still a pretty low-quality metric.
+Our systems do not fit nicely with
+normal distributions and any sort of
+average tells us very little about what
+the distribution of latencies looks like.
+
+Instead, we usually use histograms so that we
+can understand the distribution of our data.
+The 50th percentile is the median. The 90th
+percentile is the latency that 90% of all
+measured latencies are beneath. It's pretty
+cheap to measure histograms by using logarithmic
+bucketing to index into an array of buckets
+that are sized to be within 1% of the true
+observed values. The [historian](http://docs.rs/historian)
+crate was extracted from sled to assist
+with these measurements in a super cheap
+manner.
+
+Imagine this scenario:
+
+* a front-end system sends 100 requests to a back-end system
+* the front-end system is able to send each request in parallel
+* the latency distribution for the back-end system is a
+  steady 1ms until the 99th percentile where it jumps to 1s.
+* the front-end system must wait for the slowest response
+  before it can respond to the user
+
+How long does the front-end system need to wait for?
+
+The probability of needing to wait 1 second for a
+single request is 1% (99th percentile is 1s). The
+probability of needing to wait 1 second for 2 requests
+is 1.9% (`1 - (0.99 ^ 2)`). Intuition: if we sent
+1,000,000 requests, the percentage would not become
+1,000,000 * 1%, or 10,000%, because 100% is the max
+probability an event can have.
+
+The probability of needing to wait 1 second for
+100 requests is `1 - (0.99 ^ 100)`, or 63%. Even
+though the event only happens 1% of the time, our
+front-end system will have to wait 1 second in
+63% of all cases, due to needing to send multiple
+requests.
+
+Our systems are full of subcomponents that are
+accessed many times to satisfy a higher-level
+request. The more often something happens, the
+higher the percentile we should care about is.
+For many workloads, looking at the 100th percentile
+(max measurement) is quite helpful, even though
+it only happened once, because it can help
+to motivate capacity planning for other
+systems that depend on it.
+
+Further reading:
+
+* [The Tail at Scale by Jeff Dean](https://cseweb.ucsd.edu/~gmporter/classes/fa17/cse124/post/schedule/p74-dean.pdf)
 
 #### metrics case-study: sled
 
@@ -339,22 +428,6 @@ for sled:
   engine boils down to treating the disk kindly,
   often at the expense of write throughput.
 
-## USE Method
-
-The [USE Method](http://www.brendangregg.com/usemethod.html)
-is a high-level approach for thinking about systems that
-we are trying to improve or debug.
-
-The key ideas are:
-
-* Systems are made up of subsystems that request
-
-
-Further reading:
-
-* http://www.brendangregg.com/usemethod.html
-* Systems Performance: Enterprise and the Cloud by
-  Brendan Gregg (buy the book just to read chapter 2: Methodology)
 
 
 ## experimental design
@@ -461,8 +534,6 @@ that we are trying to optimize.
 http://smalldatum.blogspot.com/2019/10/usl-universal-scalability-law-is-good.html
 
 ## queue theory
-
-Further reading: Quantitative Analysis of Computer Systems by Clement Leung.
 
 ## cpus
 
