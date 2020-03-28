@@ -34,7 +34,10 @@ and others.
 ## contents
 
 * [principles](#principles)
+  * [simplify and measure](#simplify-and-measure)
 * [metrics](#metrics)
+  * [measuring latency](#measuring-latency)
+  * [case study: sled](#sled-case-study)
 * [experimental design](#experimental-design)
 * [USE Method](#use-method)
 * [rust](#rust)
@@ -122,7 +125,7 @@ production lines - crystallizing the successful
 results into new production processes that
 eventually put your machine in front of you.
 
-#### your programs
+#### simplify and measure
 
 The only thing that matters is that real
 programs on real hardware see statistically
@@ -297,7 +300,7 @@ Further reading:
   Leung - awesome intro to queue theory.
 
 
-#### latency pitfalls
+#### measuring latency
 
 If you're measuring latency for a large number
 of requests, there are a number of ways that you
@@ -372,7 +375,7 @@ Further reading:
 
 * [The Tail at Scale by Jeff Dean](https://cseweb.ucsd.edu/~gmporter/classes/fa17/cse124/post/schedule/p74-dean.pdf)
 
-#### metrics case-study: sled
+#### sled case study
 
 Here are some other metrics that are interesting
 for sled:
@@ -428,13 +431,19 @@ for sled:
   engine boils down to treating the disk kindly,
   often at the expense of write throughput.
 
-
+In sled, we measure histograms using code that was
+extracted into the [historian](https://docs.rs/historian)
+crate. We also output [a table of performance-related
+information when configured to do so](https://twitter.com/sadisticsystems/status/1229302336637558785).
+Having a profiler built-in makes finding bottlenecks
+quite easy, and in a quick glance it's easy to see
+where optimization effort may be well spent.
 
 ## experimental design
 
-We seek to make sled more efficient by changing code.
-
-Running the same program twice will result
+How do we measure our metrics? We seek to make
+our programs more efficient by changing code.
+Running a program twice will result
 in two different measurements. But the difference
 in performance is NOT necessarily because the
 code is faster for realistic workloads.
@@ -446,6 +455,11 @@ more optimizations, the program may run slower
 if executed immediately after compilation,
 because frequency scaling has kicked in
 already.
+
+Maybe your memory is becoming more fragmented
+over time. Maybe files that are being read
+during your workload are cached the second time
+around in the operating system's pagecache.
 
 Many code changes that run faster in microbenchmarks
 will run more slowly when combined with
