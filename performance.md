@@ -34,9 +34,9 @@ and others.
 ## contents
 
 * [principles](#principles)
-* [USE Method](#use-method)
 * [metrics](#metrics)
 * [experimental design](#experimental-design)
+* [USE Method](#use-method)
 * [rust](#rust)
 * [cpus](#cpus)
   * [frequency scaling](#frequency-scaling)
@@ -103,20 +103,27 @@ wrong to some extent, and we are fundamentally
 incapable of altering this fact. But we can
 be responsible in the face of that.
 
-Corollary: you are allowed to be wrong.
+Corollary: allow yourself to be wrong.
+Allowing yourself to be wrong with yourself,
+your collaborators, and in public is a key
+optimization for learning faster and building
+better things with less effort and in less time.
 
 Luckily for us, machines tend to be quite
 amenable to measurement. Constructing them
 to be somewhat measurable in the first place
-is the only way we've been able to produce
-them despite our many shortcomings. We took
+is the only reason we've been able to produce
+them at all despite our many shortcomings. We took
 the predecessor to your current machine,
 chose some metrics to improve, made a huge
 number of mistakes while continuing to measure,
 and occasionally we got lucky and the metrics
 we cared about improved enough to alter the
 production lines - crystallizing the successful
-results into new production processes.
+results into new production processes that
+eventually put your machine in front of you.
+
+#### your programs
 
 The only thing that matters is that real
 programs on real hardware see statistically
@@ -143,7 +150,7 @@ flee the project after short periods of
 activity.
 
 Putting energy into reducing the complexity
-of your code will make it:
+of your code will often make it:
 
 * easier for humans to read (hence faster for
   them to optimize over time)
@@ -151,7 +158,7 @@ of your code will make it:
 * faster to compile at all, resulting in a more
   responsive edit-measure loop, resulting in
   more optimizations per human time unit spent
-* often less machine code, improving instruction
+* have less machine code, improving instruction
   cache at runtime (especially when running
   outside of microbenchmarks that conceal
   realistic cache effects)
@@ -160,28 +167,13 @@ of your code will make it:
 
 So, we must pick our meaningful metrics,
 measure them after considerate experimental
-design, make decisions, repeat.
+design, make decisions while having these
+results at hand, and repeat.
 
 Our unmeasured assumptions are incorrect.
 Optimizing without measuring is how you
 end up with unmaintainable macho codebases.
-
-## USE Method
-
-The [USE Method](http://www.brendangregg.com/usemethod.html)
-is a high-level approach for thinking about systems that
-we are trying to improve or debug.
-
-The key ideas are:
-
-* Systems are made up of subsystems that request
-
-
-Further reading:
-
-* http://www.brendangregg.com/usemethod.html
-* Systems Performance: Enterprise and the Cloud by
-  Brendan Gregg (buy the book just to read chapter 2: Methodology)
+This is unfortunately common.
 
 ## metrics
 
@@ -190,11 +182,7 @@ Usually, a workload will have a few of these
 that matter more than others. Many projects
 are incentivized to make throughput high
 because they know it will lead to more adoption
-after users apply and publish meaningless
-benchmarks. sled's throughput is pretty damn
-high already, so now we should be spending
-more effort on memory usage, worst-case latency,
-and worst-case disk utilization.
+through [benchmarketing](#benchmarketing).
 
 Here are some other metrics that are interesting
 for sled:
@@ -204,7 +192,9 @@ for sled:
   prioritizing transactional workloads above
   analytical workloads. We want users to
   have reliably responsive access to their
-  data.
+  data. We pay particular attention to the very
+  worst case latency because it is fairly
+  important from an operational perspective.
 * Peak memory utilization: we want a high
   fraction of all allocated memory to be
   made up of user data that is likely
@@ -247,6 +237,24 @@ for sled:
   the work of building a high quality storage
   engine boils down to treating the disk kindly,
   often at the expense of write throughput.
+
+## USE Method
+
+The [USE Method](http://www.brendangregg.com/usemethod.html)
+is a high-level approach for thinking about systems that
+we are trying to improve or debug.
+
+The key ideas are:
+
+* Systems are made up of subsystems that request
+
+
+Further reading:
+
+* http://www.brendangregg.com/usemethod.html
+* Systems Performance: Enterprise and the Cloud by
+  Brendan Gregg (buy the book just to read chapter 2: Methodology)
+
 
 ## experimental design
 
