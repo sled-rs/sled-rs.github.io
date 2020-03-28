@@ -147,9 +147,9 @@ Codebases that burn people out will not
 see long-term success unless they receive
 tons of funding to replace people who
 flee the project after short periods of
-activity. Organizational instability
+activity. [Organizational instability
 is a high-quality predictive metric
-for the bugginess of a codebase.
+for the bugginess of a codebase](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2008-11.pdf).
 
 Putting energy into reducing the complexity
 of your code will often make it:
