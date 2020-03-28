@@ -172,17 +172,46 @@ results at hand, and repeat.
 
 Our unmeasured assumptions are incorrect.
 Optimizing without measuring is how you
-end up with unmaintainable macho codebases.
-This is unfortunately common.
+end up with unmaintainable codebases
+that have been inflicted by many displays
+of "performative-optimization" written
+with the metric of "demonstrates
+intellectual superiority" over metrics
+like "long-term collaborator happiness".
+
+Let's strive to be clear about our
+metrics, at the very least.
 
 ## metrics
 
 Performance metrics come in many shapes and sizes.
-Usually, a workload will have a few of these
-that matter more than others. Many projects
-are incentivized to make throughput high
-because they know it will lead to more adoption
-through [benchmarketing](#benchmarketing).
+Workloads will have a few metrics that matter far
+more than others.
+
+It's at this point that I'm obligated to bash
+[benchmarketing](#benchmarketing), but honestly
+it's often an important tool for projects to
+see success - you just need to be clear about
+what your metrics actually are. Don't trick
+people. Give people the means to reproduce
+your findings. All that good science shit.
+
+Most systems performance metrics boil down
+to these two:
+
+* latency - the time that an operation takes
+* throughput - how many operations can be performed in some unit of time
+
+At higher scales, both of these metrics become
+secondary concerns compared to metrics like:
+
+* total cost of ownership
+  * how many servers do I need to pay for to get my shit done?
+  * how many hours do engineers spend taking care of this shit?
+  * how much power does this shit draw?
+
+These days, many of our systems exist as small components in larger
+distributed systems. If we are making a service that will have
 
 Here are some other metrics that are interesting
 for sled:
@@ -237,6 +266,8 @@ for sled:
   the work of building a high quality storage
   engine boils down to treating the disk kindly,
   often at the expense of write throughput.
+
+The
 
 ## USE Method
 
