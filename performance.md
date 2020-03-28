@@ -10,17 +10,25 @@
 This guide contains basic information for getting
 started with performance-sensitive engineering.
 
-It is hoped that this will provide enough background
-to be successful in optimizing the sled database when
-suboptimal behavior is observed. It would also be
-nice if some Rust folks paid more attention to this
-stuff. So much effort is being wasted due to
-misdirected performance efforts.
+The target audience is the Rust ecosystem, where many
+people are now trying their hands at optimization
+for the first time. But the vast majority of this
+document applies generally to optimizing programs
+running on machines, with a few of the hardware
+effects mentioned being specific to x86.
+
+Performance is being thoughtful about the metrics
+that matter to us and allowing ourselves to be aware
+of them while making decisions.
 
 These materials are based on Tyler Neely's
 Rust workshop content, and have been inspired
-by the writings of Dmitry Vyukov, Mark Callaghan,
-Brendan Gregg, Martin Thompson, Pedro Ramalhete
+by the writings of
+[Dmitry Vyukov](http://www.1024cores.net/home/parallel-computing/cache-oblivious-algorithms),
+[Mark Callaghan](http://smalldatum.blogspot.com/2019/05/crum-conjecture-read-write-space-and.html),
+[Brendan Gregg](http://www.brendangregg.com/usemethod.html),
+[Martin Thompson](https://mechanical-sympathy.blogspot.com/2013/02/cpu-cache-flushing-fallacy.html),
+[Pedro Ramalhete](http://concurrencyfreaks.blogspot.com/2019/11/is-left-right-generic-concurrency.html)
 and others.
 
 ## contents
@@ -60,8 +68,22 @@ and others.
 * [cachegrind](#cachegrind)
 * [massif](#massif)
 * [dhat](#dhat)
+* [benchmarketing](#benchmarketing)
 
 ## principles
+
+```
+    You are not a Bayesian homunculus whose
+    reasoning is “corrupted” by cognitive biases.
+
+    You just are cognitive biases.
+
+```
+
+[- Luke Muehlhauser via RAI:Z](https://www.readthesequences.com/Rationality-An-Introduction).
+
+Metrics matter. We are
+
 
 The only thing that matters is that real
 programs on real hardware see statistically
@@ -86,6 +108,20 @@ see long-term success unless they receive
 tons of funding to replace people who
 flee the project after short periods of
 activity.
+
+Putting energy into reducing the complexity
+of your code will make it:
+
+* easier for humans to read (hence faster for
+  them to optimize over time)
+* easier for compilers to optimize
+* faster to compile at all, resulting in a more
+  responsive edit-measure loop, resulting in
+  more optimizations per human time unit spent
+* often less machine code, improving instruction
+  cache at runtime (especially when running
+  outside of microbenchmarks that conceal
+  realistic cache effects)
 
 "Experts write baby code." - Zarko Milosevic
 
@@ -405,3 +441,31 @@ for the current status of the effort to support this. It's a big
 deal. There's a reason we still use Fortran libraries in much of
 our linear algebra (and implicitly, our machine learning) libraries.
 
+## benchmarketing
+
+Sometimes publishing performance numbers is an important aspect of
+marketing your system. When performed by a project that is favored
+by someone, they will usually feel pride about those numbers. When
+performed by a non-preferred project, the same person may call-out
+the publishing of metrics as a nefarious effort to trick people into
+using a system using cherry-picked metrics.
+
+The fact is, in our attention-scarce internet spheres of communication,
+metrics are often an effective means of capturing interest. Two bar charts
+without any labels other than something like "higher is better" is
+deceptive. We can capture interest in ethical ways by being clear
+about what, specifically, we are measuring.
+
+There are, of course, perverse incentives to minimize this context,
+because it clutters up the call-to-action to get someone to try
+out the project that you have put so much hard work into. Attention
+is scarce, and you do need to be careful about how you present
+context.
+
+You should mention any hardware in the critical path relating to the
+benchmark's outcome. You should mention the workload employed.
+Ideally you should link to the code.
+
+There is a time and place for
+[benchmarketing](http://smalldatum.blogspot.com/2014/06/benchmarketing.html)
+as long as it is not
