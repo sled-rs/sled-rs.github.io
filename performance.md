@@ -15,7 +15,7 @@ people are now trying their hands at optimization
 for the first time. But the vast majority of this
 document applies generally to optimizing programs
 running on machines, with a few of the hardware
-effects mentioned being specific to x86.
+effects mentioned being specific to circa-2020 x86.
 
 Performance is being thoughtful about the metrics
 that matter to us and allowing ourselves to be aware
@@ -80,7 +80,7 @@ and others.
 
 ```
 
-[- Luke Muehlhauser via RAI:Z](https://www.readthesequences.com/Rationality-An-Introduction).
+[- Luke Muehlhauser, via R:AZ](https://www.readthesequences.com/Rationality-An-Introduction).
 
 The first thing to consider is that our minds
 are pure shit and everything we know is wrong.
@@ -105,17 +105,18 @@ be responsible in the face of that.
 
 Corollary: you are allowed to be wrong.
 
-we are wrong, and for reasons that we may
-never fully understand, despite our duties
-to ourselves to interrogate each assumption
-violation we are confronted by.
-
 Luckily for us, machines tend to be quite
 amenable to measurement. Constructing them
-to be so is the only way we've been able to
-produce them despite our glaring flaws.
-
-
+to be somewhat measurable in the first place
+is the only way we've been able to produce
+them despite our many shortcomings. We took
+the predecessor to your current machine,
+chose some metrics to improve, made a huge
+number of mistakes while continuing to measure,
+and occasionally we got lucky and the metrics
+we cared about improved enough to alter the
+production lines - crystallizing the successful
+results into new production processes.
 
 The only thing that matters is that real
 programs on real hardware see statistically
