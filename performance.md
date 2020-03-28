@@ -124,7 +124,7 @@ like total cost of ownership, responsiveness,
 etc... If a metric doesn't help a human,
 it's just a vanity pursuit that may make
 the important metrics worse due to
-underinvestment.
+under-investment.
 
 One of the most frequently overlooked
 performance metrics is the cognitive
@@ -158,7 +158,7 @@ of your code will make it:
 "Experts write baby code." - Zarko Milosevic
 
 So, we must pick our meaningful metrics,
-measure them after considerate experemental
+measure them after considerate experimental
 design, make decisions, repeat.
 
 Our unmeasured assumptions are incorrect.
@@ -252,7 +252,7 @@ for sled:
 We seek to make sled more efficient by changing code.
 
 Running the same program twice will result
-in two different measurments. But the difference
+in two different measurements. But the difference
 in performance is NOT necessarily because the
 code is faster for realistic workloads.
 [CPU frequency scaling](#frequency-scaling)
@@ -283,7 +283,7 @@ and unknown sources of variance.
 
 Only through careful measurement can we
 increase our confidence that our observed
-measurments correspond to the changes we
+measurements correspond to the changes we
 introduced in code.
 
 Failing to exercise experimental discipline
@@ -329,7 +329,7 @@ that we are trying to optimize.
 ```
 * compile workload 1
 * compile workload 2
-* cooldown
+* cool-down
 * time workload 1
 * time workload 2
 * time workload 1
@@ -389,12 +389,12 @@ and it will make it seem like a workload is slower
 even though it is much faster, but more heavily throttled.
 
 
-If you have an intel CPU, you can use the `i7z` command,
+If you have an Intel CPU, you can use the `i7z` command,
 to see what your cores are currently doing. It is
- available in most linux package managers.
+ available in most Linux package managers.
 
 ```
-Cpu speed from cpuinfo 1607.00Mhz
+CPU speed from cpuinfo 1607.00MHz
 
 True Frequency (without accounting Turbo) 1607 MHz
   CPU Multiplier 16x || Bus clock frequency (BCLK) 100.44 MHz
@@ -420,7 +420,7 @@ C6, C7 = Everything in C3 + core state saved to last level cache, C7 is deeper t
 ```
 
 
-This list has been extracted from [Kobzol's wonderful hardware effects github repo](https://github.com/Kobzol/hardware-effects).
+This list has been extracted from [Kobzol's wonderful hardware effects GitHub repo](https://github.com/Kobzol/hardware-effects).
 [Ben Titzer - What Spectre Means for Language Implementors](https://www.youtube.com/watch?v=FGX-KD5Nh2g)
 
 ### 4k-aliasing
