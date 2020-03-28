@@ -147,7 +147,9 @@ Codebases that burn people out will not
 see long-term success unless they receive
 tons of funding to replace people who
 flee the project after short periods of
-activity.
+activity. Organizational instability
+is a high-quality predictive metric
+for the bugginess of a codebase.
 
 Putting energy into reducing the complexity
 of your code will often make it:
@@ -203,15 +205,85 @@ to these two:
 * throughput - how many operations can be performed in some unit of time
 
 At higher scales, both of these metrics become
-secondary concerns compared to metrics like:
+factors in major concerns like:
 
 * total cost of ownership
   * how many servers do I need to pay for to get my shit done?
   * how many hours do engineers spend taking care of this shit?
   * how much power does this shit draw?
 
-These days, many of our systems exist as small components in larger
-distributed systems. If we are making a service that will have
+In trying to determine how many servers do I need
+to pay for to get my shit done, we need to consider
+both latency and throughput.
+
+If we have 1000 requests arriving per second
+at an exponential distribution (as opposed to one
+arriving each millisecond on the dot), our
+system actually needs to process requests
+faster than one each millisecond. [Queue
+theory](#queue-theory) tells us that as
+our arrival rate approaches our processing
+rate, our queue depth approaches infinity.
+Nobody's got that kind of time to lay
+around in line to be served. Queue
+theory provides a number of key intuitions
+for reasoning about the relationship
+between latency and throughput. See
+[this site](https://witestlab.poly.edu/blog/average-queue-length-of-an-m-m-1-queue/)
+for pretty graphs illustrating this on an
+[M/M/1](https://en.wikipedia.org/wiki/Kendall%27s_notation)
+queue analyzing a network system.
+
+Some other important general-purpose metrics are:
+
+* utilization - the proportion of time that a system
+  (server, disk, hashmap, etc...) is busy handling requests
+* saturation - the extent to which requests must queue
+  before being handled by the system, usually
+  measured in terms of queue depth (length).
+
+Latency and throughput considerations are often
+in direct contradiction with each other. If we
+want to optimize the throughput of a server,
+we want to increase the chance that when a server
+is finished processing one request that it already
+has another one lined up and ready to go. 100%
+utilization means that the server is always
+doing useful work. If there is not work already
+waiting to be served when the previous item completes,
+the utilization drops, along with the throughput.
+Having things waiting to go in a queue is a
+common way to increase throughput.
+
+But waiting is bad for latency.
+All other things being equal, sending more
+requests to a system will cause latency to
+suffer because the chance that a request
+will have to wait in line before being served
+will increase as well. If we want to minimize
+the latency of a server, we want to increase the
+chance that there is an empty queue leading
+into it, because waiting in that queue will slow
+down each request.
+
+Latency vs throughput is a fundamental relationship that has
+tremendous consequences for performance-sensitive
+engineering. We are constantly faced with
+decisions about whether we want our requests
+to be fast, or if we want the system to generally
+handle many requests per second, with some being
+quite slow.
+
+Any time somebody tells you a scheduling technique
+increases throughput while also decreasing latency,
+you should be extremely skeptical. Unless
+there is fundamentally different work happening under
+the hood, this is not a realistic claim.
+
+If you want to improve both latency and throughput,
+you need to make the unit of work cheaper to perform.
+
+#### metrics case-study: sled
 
 Here are some other metrics that are interesting
 for sled:
@@ -266,8 +338,6 @@ for sled:
   the work of building a high quality storage
   engine boils down to treating the disk kindly,
   often at the expense of write throughput.
-
-The
 
 ## USE Method
 
