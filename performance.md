@@ -82,7 +82,39 @@ and others.
 
 [- Luke Muehlhauser via RAI:Z](https://www.readthesequences.com/Rationality-An-Introduction).
 
-Metrics matter. We are
+The first thing to consider is that our minds
+are pure shit and everything we know is wrong.
+We must accept our fallibility before embarking
+down the path to fast-as-fuck machinery.
+Our assumptions are all wrong to some extent,
+and they often have a short shelf-life that we
+habitually fail to check the expiration date on.
+We build towers of assumptions that are bound
+to specific contexts, and when the conditions
+that caused us to form these beliefs change,
+we tend not to revisit the now-invalidated
+beliefs. Cache invalidation is hard when
+we are so rarely aware of the dependency
+graphs of what we believe.
+
+So, we measure. Even when we're convinced
+that we're right. Because we are always
+wrong to some extent, and we are fundamentally
+incapable of altering this fact. But we can
+be responsible in the face of that.
+
+Corollary: you are allowed to be wrong.
+
+we are wrong, and for reasons that we may
+never fully understand, despite our duties
+to ourselves to interrogate each assumption
+violation we are confronted by.
+
+Luckily for us, machines tend to be quite
+amenable to measurement. Constructing them
+to be so is the only way we've been able to
+produce them despite our glaring flaws.
+
 
 
 The only thing that matters is that real
