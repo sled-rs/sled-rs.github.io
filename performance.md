@@ -36,15 +36,12 @@ productionize cutting edge database research with implementations in Rust :)
 ## contents
 
 * [principles](#principles)
-  * [productivity](#productivity)
-* [metrics: latency, throughput, utilization and saturation](#metrics)
-  * [measuring latency](#measuring-latency)
-  * [case study: sled](#sled-case-study)
-
-TODO
-
 * [experimental design](#experimental-design)
   * [experiment checklist](#experiment-checklist)
+* [metrics: latency, throughput, utilization and saturation](#metrics)
+  * [measuring latency](#measuring-latency)
+  * [productivity](#productivity)
+  * [case study: sled](#sled-case-study)
 * [universal scalability law](#universal-scalability-law)
 * [computation](#computation)
   * [cache](#cache)
@@ -125,243 +122,9 @@ make the important metrics worse due to under-investment.
 
 We must select our measurements with care.
 
-### productivity
-
-One of the most frequently overlooked performance metrics is the cognitive
-complexity of a codebase. If engineers experience high friction when trying to
-change a codebase, all efforts to make the code faster will be dramatically
-hindered. A codebase that is a joy for engineers to work with is a codebase that
-will see the most long-term optimizations. Codebases that burn people out will
-not see long-term success unless they receive tons of funding to replace people
-who flee the project after short periods of activity. [Organizational
-instability is a high-quality predictive metric for the bugginess of a
-codebase](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2008-11.pdf).
-
-Putting energy into reducing the complexity of your code will often make it:
-
-* easier for humans to read (hence faster for them to optimize over time)
-* easier for compilers to optimize
-* faster to compile at all, resulting in a more responsive edit-measure
-  loop, resulting in more optimizations per human time unit spent
-* have less machine code, improving instruction cache at runtime
-  (especially when running outside of microbenchmarks that conceal
-  realistic cache effects)
-
-"Experts write baby code." - Zarko Milosevic
-
-So, we must pick our meaningful metrics, measure them after considerate
-experimental design, make decisions while having these results at hand, and
-repeat.
-
-Our unmeasured assumptions are incorrect. Optimizing without measuring is how
-you end up with unmaintainable codebases that have been inflicted by many
-displays of "performative-optimization" written with the metric of "demonstrates
-intellectual superiority" over metrics like "long-term collaborator happiness".
-
-Let's strive to be clear about our metrics, at the very least.
-
-## metrics
-
-Performance metrics come in many shapes and sizes.  Workloads will have a few
-metrics that matter far more than others.
-
-It's at this point that I'm obligated to bash
-[benchmarketing](http://smalldatum.blogspot.com/2014/06/benchmarketing.html),
-but honestly it's often an important tool for projects to see success - you
-just need to be clear about what your metrics actually are. Don't trick people.
-Give people the means to reproduce your findings. All that good science shit.
-
-Most systems performance metrics boil down to these two:
-
-* latency - the time that an operation takes
-* throughput - how many operations can be performed in some unit of time
-
-At higher scales, both of these metrics become
-factors in major concerns like:
-
-* total cost of ownership
-  * how many servers do I need to pay for to get my shit done?
-  * how many hours do engineers spend taking care of this shit?
-  * how much power does this shit draw?
-
-In trying to determine how many servers do I need
-to pay for to get my shit done, we need to consider
-both latency and throughput.
-
-If we have 1000 requests arriving per second
-at an exponential distribution (as opposed to one
-arriving each millisecond on the dot), our
-system actually needs to process requests
-faster than one each millisecond. Queue
-theory tells us that as
-our arrival rate approaches our processing
-rate, our queue depth approaches infinity.
-Nobody's got that kind of time to lay
-around in line to be served. Queue
-theory provides a number of key intuitions
-for reasoning about the relationship
-between latency and throughput. See
-[this site](https://witestlab.poly.edu/blog/average-queue-length-of-an-m-m-1-queue/)
-for pretty graphs illustrating this on an
-[M/M/1](https://en.wikipedia.org/wiki/Kendall%27s_notation)
-queue analyzing a network system.
-
-Some other important general-purpose metrics are:
-
-* utilization - the proportion of time that a system (server, disk,
-  hashmap, etc...) is busy handling requests
-* saturation - the extent to which requests must queue before being handled
-  by the system, usually measured in terms of queue depth (length).
-
-Latency and throughput considerations are often in direct contradiction with
-each other. If we want to optimize the throughput of a server, we want to
-increase the chance that when a server is finished processing one request that
-it already has another one lined up and ready to go. 100% utilization means
-that the server is always doing useful work. If there is not work already
-waiting to be served when the previous item completes, the utilization drops,
-along with the throughput.  Having things waiting to go in a queue is a common
-way to increase throughput.
-
-But waiting (saturation) is bad for latency.  All other things being equal,
-sending more requests to a system will cause latency to suffer because the
-chance that a request will have to wait in line before being served will
-increase as well. If we want to minimize the latency of a server, we want to
-increase the chance that there is an empty queue leading into it, because
-waiting in that queue will slow down each request.
-
-Latency vs throughput is a fundamental relationship that has tremendous
-consequences for performance-sensitive engineering. We are constantly faced
-with decisions about whether we want our requests to be fast, or if we want the
-system to generally handle many requests per second, with some being quite
-slow.
-
-If you want to improve both latency and throughput, you need to make the unit
-of work cheaper to perform.
-
-Different systems will have different relationships between utilization and
-saturation. Network adapters are often designed to be able to keep receiving
-more and more work and avoid saturation until relatively high utilization.
-Other devices, like spinning disks, will start saturating quite quickly,
-because the work causes other work to get slower by needing to drag the disk
-spindle to another physical location before it's able to handle the request.
-Here's a place where smart scheduling can make a huge difference for the
-relationship between utilization and saturation.
-
-Further reading:
-
-* http://www.brendangregg.com/usemethod.html
-* Systems Performance: Enterprise and the Cloud by
-  Brendan Gregg (buy the book just to read chapter 2: Methodology)
-* Quantitative Analysis of Computer Systems by Clement
-  Leung - awesome intro to queue theory.
-
-
-### measuring latency
-
-If you're measuring latency for a large number of requests, there are a number
-of ways that you can derive meaning from the measurements.
-
-The one that many people reach for immediately is average. But the average is
-not very interesting for computer systems because it hides the impact of
-outliers.
-
-Some people claim that the geometric mean instead of the arithmetic mean is a
-better choice for some metrics, but for reasoning about highly discrete systems
-(nearly everything in the world of systems) it's still a pretty low-quality
-metric.  Our systems do not fit nicely with normal distributions and any sort
-of average tells us very little about what the distribution of latencies looks
-like.
-
-Instead, we usually use histograms so that we can understand the distribution
-of our data.  The 50th percentile is the median. The 90th percentile is the
-latency that 90% of all measured latencies are beneath. It's pretty cheap to
-measure histograms by using logarithmic bucketing to index into an array of
-buckets that are sized to be within 1% of the true observed values. The
-[historian](http://docs.rs/historian) crate was extracted from sled to assist
-with these measurements in a super cheap manner.
-
-Imagine this scenario:
-
-* a front-end system sends 100 requests to a back-end system
-* the front-end system is able to send each request in parallel
-* the latency distribution for the back-end system is a
-  steady 1ms until the 99th percentile where it jumps to 1s.
-* the front-end system must wait for the slowest response
-  before it can respond to the user
-
-How long does the front-end system need to wait for?
-
-The probability of needing to wait 1 second for a single request is 1% (99th
-percentile is 1s). The probability of needing to wait 1 second for 2 requests is
-1.9% (`1 - (0.99 ^ 2)`). Intuition: if we sent 1,000,000 requests, the
-percentage would not become 1,000,000 * 1%, or 10,000%, because 100% is the max
-probability an event can have.
-
-The probability of needing to wait 1 second for 100 requests is `1 - (0.99 ^
-100)`, or 63%. Even though the event only happens 1% of the time, our front-end
-system will have to wait 1 second in 63% of all cases, due to needing to send
-multiple requests.
-
-Our systems are full of subcomponents that are accessed many times to satisfy a
-higher-level request. The more often something happens, the higher the
-percentile we should care about is. For many workloads, looking at the 100th
-percentile (max measurement) is quite helpful, even though it only happened
-once, because it can help to motivate capacity planning for other systems that
-depend on it.
-
-Further reading:
-
-* [The Tail at Scale by Jeff Dean](https://cseweb.ucsd.edu/~gmporter/classes/fa17/cse124/post/schedule/p74-dean.pdf)
-
-### sled case study
-
-Here are some other metrics that are interesting
-for sled:
-
-* Single operation worst case latency: this
-  is our primary metric because we are prioritizing transactional workloads
-  above analytical workloads. We want users to have reliably responsive access
-  to their data. We pay particular attention to the very worst case latency
-  because it is fairly important from an operational perspective.
-* Peak memory utilization: we want a high
-  fraction of all allocated memory to be made up of user data that is likely to
-  be accessed. This lets us keep our cache hit rates higher given the available
-  memory, reducing the latency of more operations.
-* Recovery latency. How long does it take
-  to start the database after crashing?
-* Peak memory throughput: we want to avoid
-  short-lived allocations that may be more efficiently stored on the stack. This
-  also allows us to have more predictable latency as our memory usage grows,
-  because most allocators start to degrade in various ways as they are pushed
-  harder.
-* Bulk-loading throughput: we want users to
-  be able to insert large amounts of data into sled quickly so they can start
-  using it.
-* Peak disk space utilization: we don't want
-  sled to use 10x the space that user data requires. It's normal for databases
-  to use 1-2x the actual data size because of various defragmenting efforts, but
-  we reduce the number of deployment possibilities when this "space
-  amplification" is high.
-* Peak disk throughput: there is a trade-off
-  between new data that can be written and the amount of disk throughput we
-  spend rewriting old data to defragment the storage file and use less total
-  space. If we are careful about minimizing the amount of data that we write at
-  all, we can increase our range of choice between smaller files and higher
-  write throughput.
-* Disk durability: the more we write data at all,
-  the sooner our drives will die. We should avoid moving data around too much. A
-  huge amount of the work of building a high quality storage engine boils down
-  to treating the disk kindly, often at the expense of write throughput.
-
-In sled, we measure histograms using code that was
-extracted into the [historian](https://docs.rs/historian)
-crate. We also output [a table of performance-related
-information when configured to do so](https://twitter.com/sadisticsystems/status/1229302336637558785).
-Having a profiler built-in makes finding bottlenecks
-quite easy, and in a quick glance it's easy to see
-where optimization effort may be well spent.
-
 ## experimental design
+
+Experimental design is about
 
 If an experiment were a pure math function, changing our input variables would
 be the only thing that would influence the change of our observed outputs.
@@ -458,11 +221,245 @@ trying to optimize.
 - [ ]
 - [ ]
 
-
 Further reading:
 
 * The Art of Computer Systems Performance Analysis by Raj Jain
 
+
+## metrics
+
+Performance metrics come in many shapes and sizes.  Workloads will have a few
+metrics that matter far more than others.
+
+It's at this point that I'm obligated to bash
+[benchmarketing](http://smalldatum.blogspot.com/2014/06/benchmarketing.html),
+but honestly it's often an important tool for projects to see success - you
+just need to be clear about what your metrics actually are. Don't trick people.
+Give people the means to reproduce your findings. All that good science shit.
+
+Most systems performance metrics boil down to these two:
+
+* latency - the time that an operation takes
+* throughput - how many operations can be performed in some unit of time
+
+At higher scales, both of these metrics become
+factors in major concerns like:
+
+* total cost of ownership
+  * how many servers do I need to pay for to get my shit done?
+  * how many hours do engineers spend taking care of this shit?
+  * how much power does this shit draw?
+
+In trying to determine how many servers do I need
+to pay for to get my shit done, we need to consider
+both latency and throughput.
+
+If we have 1000 requests arriving per second
+at an exponential distribution (as opposed to one
+arriving each millisecond on the dot), our
+system actually needs to process requests
+faster than one each millisecond. Queue
+theory tells us that as
+our arrival rate approaches our processing
+rate, our queue depth approaches infinity.
+Nobody's got that kind of time to lay
+around in line to be served. Queue
+theory provides a number of key intuitions
+for reasoning about the relationship
+between latency and throughput. See
+[this site](https://witestlab.poly.edu/blog/average-queue-length-of-an-m-m-1-queue/)
+for pretty graphs illustrating this on an
+[M/M/1](https://en.wikipedia.org/wiki/Kendall%27s_notation)
+queue analyzing a network system.
+
+Some other important general-purpose metrics are:
+
+* utilization - the proportion of time that a system (server, disk,
+  hashmap, etc...) is busy handling requests
+* saturation - the extent to which requests must queue before being handled
+  by the system, usually measured in terms of queue depth (length).
+
+Latency and throughput considerations are often in direct contradiction with
+each other. If we want to optimize the throughput of a server, we want to
+increase the chance that when a server is finished processing one request that
+it already has another one lined up and ready to go. 100% utilization means
+that the server is always doing useful work. If there is not work already
+waiting to be served when the previous item completes, the utilization drops,
+along with the throughput.  Having things waiting to go in a queue is a common
+way to increase throughput.
+
+But waiting (saturation) is bad for latency.  All other things being equal,
+sending more requests to a system will cause latency to suffer because the
+chance that a request will have to wait in line before being served will
+increase as well. If we want to minimize the latency of a server, we want to
+increase the chance that there is an empty queue leading into it, because
+waiting in that queue will slow down each request.
+
+Latency vs throughput is a fundamental relationship that has tremendous
+consequences for performance-sensitive engineering. We are constantly faced
+with decisions about whether we want our requests to be fast, or if we want the
+system to generally handle many requests per second, with some being quite
+slow.
+
+If you want to improve both latency and throughput, you need to make the unit
+of work cheaper to perform.
+
+Different systems will have different relationships between utilization and
+saturation. Network adapters are often designed to be able to keep receiving
+more and more work and avoid saturation until relatively high utilization.
+Other devices, like spinning disks, will start saturating quite quickly,
+because the work causes other work to get slower by needing to drag the disk
+spindle to another physical location before it's able to handle the request.
+Here's a place where smart scheduling can make a huge difference for the
+relationship between utilization and saturation.
+
+Further reading:
+
+* http://www.brendangregg.com/usemethod.html
+* Systems Performance: Enterprise and the Cloud by
+  Brendan Gregg (buy the book just to read chapter 2: Methodology)
+* Quantitative Analysis of Computer Systems by Clement
+  Leung - awesome intro to queue theory.
+
+### measuring latency
+
+If you're measuring latency for a large number of requests, there are a number
+of ways that you can derive meaning from the measurements.
+
+The one that many people reach for immediately is average. But the average is
+not very interesting for computer systems because it hides the impact of
+outliers.
+
+Some people claim that the geometric mean instead of the arithmetic mean is a
+better choice for some metrics, but for reasoning about highly discrete systems
+(nearly everything in the world of systems) it's still a pretty low-quality
+metric.  Our systems do not fit nicely with normal distributions and any sort
+of average tells us very little about what the distribution of latencies looks
+like.
+
+Instead, we usually use histograms so that we can understand the distribution
+of our data.  The 50th percentile is the median. The 90th percentile is the
+latency that 90% of all measured latencies are beneath. It's pretty cheap to
+measure histograms by using logarithmic bucketing to index into an array of
+buckets that are sized to be within 1% of the true observed values. The
+[historian](http://docs.rs/historian) crate was extracted from sled to assist
+with these measurements in a super cheap manner.
+
+Imagine this scenario:
+
+* a front-end system sends 100 requests to a back-end system
+* the front-end system is able to send each request in parallel
+* the latency distribution for the back-end system is a
+  steady 1ms until the 99th percentile where it jumps to 1s.
+* the front-end system must wait for the slowest response
+  before it can respond to the user
+
+How long does the front-end system need to wait for?
+
+The probability of needing to wait 1 second for a single request is 1% (99th
+percentile is 1s). The probability of needing to wait 1 second for 2 requests is
+1.9% (`1 - (0.99 ^ 2)`). Intuition: if we sent 1,000,000 requests, the
+percentage would not become 1,000,000 * 1%, or 10,000%, because 100% is the max
+probability an event can have.
+
+The probability of needing to wait 1 second for 100 requests is `1 - (0.99 ^
+100)`, or 63%. Even though the event only happens 1% of the time, our front-end
+system will have to wait 1 second in 63% of all cases, due to needing to send
+multiple requests.
+
+Our systems are full of subcomponents that are accessed many times to satisfy a
+higher-level request. The more often something happens, the higher the
+percentile we should care about is. For many workloads, looking at the 100th
+percentile (max measurement) is quite helpful, even though it only happened
+once, because it can help to motivate capacity planning for other systems that
+depend on it.
+
+Further reading:
+
+* [The Tail at Scale by Jeff Dean](https://cseweb.ucsd.edu/~gmporter/classes/fa17/cse124/post/schedule/p74-dean.pdf)
+
+### productivity
+
+One of the most frequently overlooked performance metrics is the cognitive
+complexity of a codebase. If engineers experience high friction when trying to
+change a codebase, all efforts to make the code faster will be dramatically
+hindered. A codebase that is a joy for engineers to work with is a codebase that
+will see the most long-term optimizations. Codebases that burn people out will
+not see long-term success unless they receive tons of funding to replace people
+who flee the project after short periods of activity. [Organizational
+instability is a high-quality predictive metric for the bugginess of a
+codebase](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2008-11.pdf).
+
+Putting energy into reducing the complexity of your code will often make it:
+
+* easier for humans to read (hence faster for them to optimize over time)
+* easier for compilers to optimize
+* faster to compile at all, resulting in a more responsive edit-measure
+  loop, resulting in more optimizations per human time unit spent
+* have less machine code, improving instruction cache at runtime
+  (especially when running outside of microbenchmarks that conceal
+  realistic cache effects)
+
+"Experts write baby code." - Zarko Milosevic
+
+So, we must pick our meaningful metrics, measure them after considerate
+[experimental design](#experimental-design), make decisions while having these
+results at hand, and repeat.
+
+Our unmeasured assumptions are incorrect. Optimizing without measuring is how
+you end up with unmaintainable codebases that have been inflicted by many
+displays of "performative-optimization" written with the metric of "demonstrates
+intellectual superiority" over metrics like "long-term collaborator happiness".
+
+Let's strive to be clear about our metrics, at the very least.
+
+### sled case study
+
+Here are some other metrics that are interesting
+for sled:
+
+* Single operation worst case latency: this
+  is our primary metric because we are prioritizing transactional workloads
+  above analytical workloads. We want users to have reliably responsive access
+  to their data. We pay particular attention to the very worst case latency
+  because it is fairly important from an operational perspective.
+* Peak memory utilization: we want a high
+  fraction of all allocated memory to be made up of user data that is likely to
+  be accessed. This lets us keep our cache hit rates higher given the available
+  memory, reducing the latency of more operations.
+* Recovery latency. How long does it take
+  to start the database after crashing?
+* Peak memory throughput: we want to avoid
+  short-lived allocations that may be more efficiently stored on the stack. This
+  also allows us to have more predictable latency as our memory usage grows,
+  because most allocators start to degrade in various ways as they are pushed
+  harder.
+* Bulk-loading throughput: we want users to
+  be able to insert large amounts of data into sled quickly so they can start
+  using it.
+* Peak disk space utilization: we don't want
+  sled to use 10x the space that user data requires. It's normal for databases
+  to use 1-2x the actual data size because of various defragmenting efforts, but
+  we reduce the number of deployment possibilities when this "space
+  amplification" is high.
+* Peak disk throughput: there is a trade-off
+  between new data that can be written and the amount of disk throughput we
+  spend rewriting old data to defragment the storage file and use less total
+  space. If we are careful about minimizing the amount of data that we write at
+  all, we can increase our range of choice between smaller files and higher
+  write throughput.
+* Disk durability: the more we write data at all,
+  the sooner our drives will die. We should avoid moving data around too much. A
+  huge amount of the work of building a high quality storage engine boils down
+  to treating the disk kindly, often at the expense of write throughput.
+
+In sled, we measure histograms using code that was
+extracted into the [historian](https://docs.rs/historian)
+crate. We also output [a table of performance-related
+information when configured to do so](https://twitter.com/sadisticsystems/status/1229302336637558785).
+Having a profiler built-in makes finding bottlenecks
+quite easy, and in a quick glance it's easy to see
+where optimization effort may be well spent.
 
 ## amdahl's law
 
@@ -563,7 +560,6 @@ down more aggressively to account for the heat being generated, and it will make
 it seem like a workload is slower even though it is much faster, but more
 heavily throttled.
 
-
 If you have an Intel CPU, you can use the `i7z` command, to see what your cores
 are currently doing. It is available in most Linux package managers.
 
@@ -581,7 +577,6 @@ When you read a value that was just written, CPUs will
 ###
 ###
 
-
 ## memory
 ### numa
 ## threads
@@ -593,16 +588,12 @@ When you read a value that was just written, CPUs will
 
 Modern servers and laptops are
 
-
-
-
-
-
 ## flamegraphs
 ## cachegrind
 ## massif
 ## dhat
 
+http://www.brendangregg.com/methodology.html
 http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.html
 http://www.brendangregg.com/offcpuanalysis.html
 
