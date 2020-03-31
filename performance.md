@@ -250,32 +250,34 @@ factors in major concerns like:
   * how many hours do engineers spend taking care of this shit?
   * how much power does this shit draw?
 
-In trying to determine how many servers do I need
-to pay for to get my shit done, we need to consider
-both latency and throughput.
+In trying to determine how many servers do I need to pay for to get my shit
+done, we need to consider both latency and throughput.
 
-If we have 1000 requests arriving per second
-at an exponential distribution (as opposed to one
-arriving each millisecond on the dot), our
-system actually needs to process requests
-faster than one each millisecond. Queue
-theory tells us that as
-our arrival rate approaches our processing
-rate, our queue depth approaches infinity.
-Nobody's got that kind of time to lay
-around in line to be served. Queue
-theory provides a number of key intuitions
-for reasoning about the relationship
-between latency and throughput. See
-[this site](https://witestlab.poly.edu/blog/average-queue-length-of-an-m-m-1-queue/)
+If we have 1000 requests arriving per second at an exponential distribution (as
+opposed to one arriving each millisecond on the dot), our system actually needs
+to process requests faster than one each millisecond. Queue theory tells us
+that as our arrival rate approaches our processing rate, our queue depth
+approaches infinity.  Nobody's got that kind of time to lay around in line to
+be served. Queue theory provides a number of key intuitions for reasoning about
+the relationship between latency and throughput. See [this
+site](https://witestlab.poly.edu/blog/average-queue-length-of-an-m-m-1-queue/)
 for pretty graphs illustrating this on an
-[M/M/1](https://en.wikipedia.org/wiki/Kendall%27s_notation)
-queue analyzing a network system.
+[M/M/1](https://en.wikipedia.org/wiki/Kendall%27s_notation) queue analyzing a
+network system.
+
+In real-world systems, arrivals happen in difficult-to-predict but
+reasonable-to-model distributions that often resemble exponential or zipfian
+distributions, which means that these rare queue length explosions really do
+happen from time to time, even when nothing is really wrong. They are normal
+and should be planned for by being careful about TCP backlog lengths (usually
+set to be too large), timeout durations (usually set to be too long), retry
+strategies (*truncated* exponential backoffs), circuit-breaker patterns, etc...
 
 Some other important general-purpose metrics are:
 
 * utilization - the proportion of time that a system (server, disk,
-  hashmap, etc...) is busy handling requests
+  hashmap, etc...) is busy handling requests, as opposed to waiting for the
+  next request to arrive.
 * saturation - the extent to which requests must queue before being handled
   by the system, usually measured in terms of queue depth (length).
 
@@ -299,7 +301,7 @@ Latency vs throughput is a fundamental relationship that has tremendous
 consequences for performance-sensitive engineering. We are constantly faced
 with decisions about whether we want our requests to be fast, or if we want the
 system to generally handle many requests per second, with some being quite
-slow.
+slow due to waiting so long in the queue.
 
 If you want to improve both latency and throughput, you need to make the unit
 of work cheaper to perform.
@@ -593,9 +595,12 @@ Modern servers and laptops are
 ## massif
 ## dhat
 
+https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html
+https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf
 http://www.brendangregg.com/methodology.html
 http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.html
 http://www.brendangregg.com/offcpuanalysis.html
+https://towardsdatascience.com/an-overview-of-monte-carlo-methods-675384eb1694
 
 ## rust
 
