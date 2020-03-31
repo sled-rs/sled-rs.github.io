@@ -213,58 +213,44 @@ queue analyzing a network system.
 
 Some other important general-purpose metrics are:
 
-* utilization - the proportion of time that a system
-  (server, disk, hashmap, etc...) is busy handling requests
-* saturation - the extent to which requests must queue
-  before being handled by the system, usually
-  measured in terms of queue depth (length).
+* utilization - the proportion of time that a system (server, disk,
+  hashmap, etc...) is busy handling requests
+* saturation - the extent to which requests must queue before being handled
+  by the system, usually measured in terms of queue depth (length).
 
-Latency and throughput considerations are often
-in direct contradiction with each other. If we
-want to optimize the throughput of a server,
-we want to increase the chance that when a server
-is finished processing one request that it already
-has another one lined up and ready to go. 100%
-utilization means that the server is always
-doing useful work. If there is not work already
-waiting to be served when the previous item completes,
-the utilization drops, along with the throughput.
-Having things waiting to go in a queue is a
-common way to increase throughput.
+Latency and throughput considerations are often in direct contradiction with
+each other. If we want to optimize the throughput of a server, we want to
+increase the chance that when a server is finished processing one request that
+it already has another one lined up and ready to go. 100% utilization means
+that the server is always doing useful work. If there is not work already
+waiting to be served when the previous item completes, the utilization drops,
+along with the throughput.  Having things waiting to go in a queue is a common
+way to increase throughput.
 
-But waiting (saturation) is bad for latency.
-All other things being equal, sending more
-requests to a system will cause latency to
-suffer because the chance that a request
-will have to wait in line before being served
-will increase as well. If we want to minimize
-the latency of a server, we want to increase the
-chance that there is an empty queue leading
-into it, because waiting in that queue will slow
-down each request.
+But waiting (saturation) is bad for latency.  All other things being equal,
+sending more requests to a system will cause latency to suffer because the
+chance that a request will have to wait in line before being served will
+increase as well. If we want to minimize the latency of a server, we want to
+increase the chance that there is an empty queue leading into it, because
+waiting in that queue will slow down each request.
 
-Latency vs throughput is a fundamental relationship that has
-tremendous consequences for performance-sensitive
-engineering. We are constantly faced with
-decisions about whether we want our requests
-to be fast, or if we want the system to generally
-handle many requests per second, with some being
-quite slow.
+Latency vs throughput is a fundamental relationship that has tremendous
+consequences for performance-sensitive engineering. We are constantly faced
+with decisions about whether we want our requests to be fast, or if we want the
+system to generally handle many requests per second, with some being quite
+slow.
 
-If you want to improve both latency and throughput,
-you need to make the unit of work cheaper to perform.
+If you want to improve both latency and throughput, you need to make the unit
+of work cheaper to perform.
 
-Different systems will have different relationships
-between utilization and saturation. Network adapters
-are often designed to be able to keep receiving more
-and more work and avoid saturation until relatively
-high utilization. Other devices, like spinning disks,
-will start saturating quite quickly, because the work
-causes other work to get slower by needing to drag
-the disk spindle to another physical location before
-it's able to handle the request. Here's a place
-where smart scheduling can make a huge difference for
-the relationship between utilization and saturation.
+Different systems will have different relationships between utilization and
+saturation. Network adapters are often designed to be able to keep receiving
+more and more work and avoid saturation until relatively high utilization.
+Other devices, like spinning disks, will start saturating quite quickly,
+because the work causes other work to get slower by needing to drag the disk
+spindle to another physical location before it's able to handle the request.
+Here's a place where smart scheduling can make a huge difference for the
+relationship between utilization and saturation.
 
 Further reading:
 
@@ -277,38 +263,27 @@ Further reading:
 
 ### measuring latency
 
-If you're measuring latency for a large number
-of requests, there are a number of ways that you
-can derive meaning from the measurements.
+If you're measuring latency for a large number of requests, there are a number
+of ways that you can derive meaning from the measurements.
 
-The one that many people reach for immediately
-is average. But the average is not very interesting
-for computer systems because it hides the impact
-of outliers.
+The one that many people reach for immediately is average. But the average is
+not very interesting for computer systems because it hides the impact of
+outliers.
 
-Some people claim that the geometric mean
-instead of the arithmetic mean is a better
-choice for some metrics, but for reasoning
-about highly discrete systems (nearly
-everything in the world of systems)
-it's still a pretty low-quality metric.
-Our systems do not fit nicely with
-normal distributions and any sort of
-average tells us very little about what
-the distribution of latencies looks like.
+Some people claim that the geometric mean instead of the arithmetic mean is a
+better choice for some metrics, but for reasoning about highly discrete systems
+(nearly everything in the world of systems) it's still a pretty low-quality
+metric.  Our systems do not fit nicely with normal distributions and any sort
+of average tells us very little about what the distribution of latencies looks
+like.
 
-Instead, we usually use histograms so that we
-can understand the distribution of our data.
-The 50th percentile is the median. The 90th
-percentile is the latency that 90% of all
-measured latencies are beneath. It's pretty
-cheap to measure histograms by using logarithmic
-bucketing to index into an array of buckets
-that are sized to be within 1% of the true
-observed values. The [historian](http://docs.rs/historian)
-crate was extracted from sled to assist
-with these measurements in a super cheap
-manner.
+Instead, we usually use histograms so that we can understand the distribution
+of our data.  The 50th percentile is the median. The 90th percentile is the
+latency that 90% of all measured latencies are beneath. It's pretty cheap to
+measure histograms by using logarithmic bucketing to index into an array of
+buckets that are sized to be within 1% of the true observed values. The
+[historian](http://docs.rs/historian) crate was extracted from sled to assist
+with these measurements in a super cheap manner.
 
 Imagine this scenario:
 
@@ -393,28 +368,26 @@ where optimization effort may be well spent.
 
 ## benchmarketing
 
-Sometimes publishing performance numbers is an important aspect of
-marketing your system. When performed by a project that is favored
-by someone, they will usually feel pride about those numbers. When
-performed by a non-preferred project, the same person may call-out
-the publishing of metrics as a nefarious effort to trick people into
-using a system using cherry-picked metrics.
+Sometimes publishing performance numbers is an important aspect of marketing
+your system. When performed by a project that is favored by someone, they will
+usually feel pride about those numbers. When performed by a non-preferred
+project, the same person may call-out the publishing of metrics as a nefarious
+effort to trick people into using a system using cherry-picked metrics.
 
-The fact is, in our attention-scarce internet spheres of communication,
-metrics are often an effective means of capturing interest. Two bar charts
-without any labels other than something like "higher is better" is
-deceptive. We can capture interest in ethical ways by being clear
-about what, specifically, we are measuring.
+The fact is, in our attention-scarce internet spheres of communication, metrics
+are often an effective means of capturing interest. Two bar charts without any
+labels other than something like "higher is better" is deceptive. We can
+capture interest in ethical ways by being clear about what, specifically, we
+are measuring.
 
-There are, of course, perverse incentives to minimize this context,
-because it clutters up the call-to-action to get someone to try
-out the project that you have put so much hard work into. Attention
-is scarce, and you do need to be careful about how you present
-context.
+There are, of course, perverse incentives to minimize this context, because it
+clutters up the call-to-action to get someone to try out the project that you
+have put so much hard work into. Attention is scarce, and you do need to be
+careful about how you present context.
 
 You should mention any hardware in the critical path relating to the
-benchmark's outcome. You should mention the workload employed.
-Ideally you should link to the code so people can reproduce it.
+benchmark's outcome. You should mention the workload employed.  Ideally you
+should link to the code so people can reproduce it.
 
 There is a time and place for
 [benchmarketing](http://smalldatum.blogspot.com/2014/06/benchmarketing.html)
@@ -422,91 +395,63 @@ as long as it is not deceptive.
 
 ## experimental design
 
-If an experiment were a pure math function,
-changing our input variables would be the
-only thing that would influence the change
-of our observed outputs.
+If an experiment were a pure math function, changing our input variables would
+be the only thing that would influence the change of our observed outputs.
 
-Unfortunately, our systems are quite complex,
-and there are many factors which may influence
-the quality of our measurements.
+Unfortunately, our systems are quite complex, and there are many factors which
+may influence the quality of our measurements.
 
-Experimental design is at the heart of our
-quest to determine if our code changes made
-our system better according to our chosen
-metrics.
+Experimental design is at the heart of our quest to determine if our code
+changes made our system better according to our chosen metrics.
 
-How do we measure our metrics? We seek to make
-our programs more efficient by changing code.
-Running a program twice will result
-in two different measurements. But the difference
-in performance is NOT necessarily because the
-code is faster for realistic workloads.
-[CPU frequency scaling](#frequency-scaling)
-is a major source of variance, for instance.
+How do we measure our metrics? We seek to make our programs more efficient by
+changing code.  Running a program twice will result in two different
+measurements. But the difference in performance is NOT necessarily because the
+code is faster for realistic workloads.  [CPU frequency
+scaling](#frequency-scaling) is a major source of variance, for instance.
 
-If you spend more time compiling and applying
-more optimizations, the program may run slower
-if executed immediately after compilation,
-because frequency scaling has kicked in
-already.
+If you spend more time compiling and applying more optimizations, the program
+may run slower if executed immediately after compilation, because frequency
+scaling has kicked in already.
 
-Maybe your memory is becoming more fragmented
-over time. Maybe files that are being read
-during your workload are cached the second time
-around in the operating system's pagecache.
+Maybe your memory is becoming more fragmented over time. Maybe files that are
+being read during your workload are cached the second time around in the
+operating system's pagecache.
 
-Many code changes that run faster in microbenchmarks
-will run more slowly when combined with
-real business logic, because the microbenchmark
-causes CPU caches to behave differently.
+Many code changes that run faster in microbenchmarks will run more slowly when
+combined with real business logic, because the microbenchmark causes CPU caches
+to behave differently.
 
-Often, code that runs faster in microbenchmarks
-causes CPUs to heat up more, causing frequency
-scaling to kick in more, and result in a slower
-system when running for longer periods of time.
-Faster code often consumes more heat, as well.
-Maybe a 3% throughput improvement is not worth
-a 100% power consumption increase.
+Often, code that runs faster in microbenchmarks causes CPUs to heat up more,
+causing frequency scaling to kick in more, and result in a slower system when
+running for longer periods of time.  Faster code often consumes more heat, as
+well.  Maybe a 3% throughput improvement is not worth a 100% power consumption
+increase.
 
-Experimental design is about trying to
-extract useful measurements despite known
-and unknown sources of variance.
+Experimental design is about trying to extract useful measurements despite
+known and unknown sources of variance.
 
-Only through careful measurement can we
-increase our confidence that our observed
-measurements correspond to the changes we
-introduced in code.
+Only through careful measurement can we increase our confidence that our
+observed measurements correspond to the changes we introduced in code.
 
-Failing to exercise experimental discipline
-will result in a lot of "optimizations"
-that are assumed to improve the situation
-but in fact only add complexity to the
-codebase, reducing maintainability, and
-making it harder to properly measure
-future optimizations.
+Failing to exercise experimental discipline will result in a lot of
+"optimizations" that are assumed to improve the situation but in fact only add
+complexity to the codebase, reducing maintainability, and making it harder to
+properly measure future optimizations.
 
-It's quite easy to justify a performance regression
-as an improvement when you see a workload
-running faster after changing code. But code
-changes are far from the only things that
-impact how long it takes to run a program,
-or how fast the code runs.
+It's quite easy to justify a performance regression as an improvement when you
+see a workload running faster after changing code. But code changes are far
+from the only things that impact how long it takes to run a program, or how
+fast the code runs.
 
-There are a large number of known and unknown
-factors that will introduce variance into
-workload measurements.
-Even if we run a program twice in a row,
-we will experience variance in our observed
-latencies and throughputs.
+There are a large number of known and unknown factors that will introduce
+variance into workload measurements.  Even if we run a program twice in a row,
+we will experience variance in our observed latencies and throughputs.
 
-There are lots of ways to make sled faster in a
-single run of a workload, and we need to
-make sure that when we take measurements,
-we are not actually measuring the effects
-of things that do not relate to the code
-that we are trying to optimize.
-
+There are lots of ways to make sled faster in a single run of a workload, and
+we need to make sure that when we take measurements, we are not actually
+measuring the effects of things that do not relate to the code that we are
+trying to optimize.
 
 #### Bad:
 
@@ -653,8 +598,6 @@ heavily throttled.
 
 If you have an Intel CPU, you can use the `i7z` command, to see what your cores
 are currently doing. It is available in most Linux package managers.
-
-
 
 This list has been extracted from [Kobzol's wonderful hardware effects GitHub repo](https://github.com/Kobzol/hardware-effects).
 [Ben Titzer - What Spectre Means for Language Implementors](https://www.youtube.com/watch?v=FGX-KD5Nh2g)
