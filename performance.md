@@ -313,7 +313,11 @@ Other devices, like spinning disks, will start saturating quite quickly,
 because the work causes other work to get slower by needing to drag the disk
 spindle to another physical location before it's able to handle the request.
 Here's a place where smart scheduling can make a huge difference for the
-relationship between utilization and saturation.
+relationship between utilization and saturation. Most modern storage
+devices based on flash memory are essentially distributed databases
+where every 32mb is a different shard, so you can get a lot of throughput
+without immediate negative saturation by keeping the queue depths pretty
+deep, so more of the distributed chips in the device can do work at once.
 
 Further reading:
 
