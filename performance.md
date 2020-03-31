@@ -40,7 +40,6 @@ productionize cutting edge database research with implementations in Rust :)
 * [metrics: latency, throughput, utilization and saturation](#metrics)
   * [measuring latency](#measuring-latency)
   * [case study: sled](#sled-case-study)
-* [benchmarketing](#benchmarketing)
 
 TODO
 
@@ -163,20 +162,16 @@ Let's strive to be clear about our metrics, at the very least.
 
 ## metrics
 
-Performance metrics come in many shapes and sizes.
-Workloads will have a few metrics that matter far
-more than others.
+Performance metrics come in many shapes and sizes.  Workloads will have a few
+metrics that matter far more than others.
 
 It's at this point that I'm obligated to bash
-[benchmarketing](#benchmarketing), but honestly
-it's often an important tool for projects to
-see success - you just need to be clear about
-what your metrics actually are. Don't trick
-people. Give people the means to reproduce
-your findings. All that good science shit.
+[benchmarketing](http://smalldatum.blogspot.com/2014/06/benchmarketing.html),
+but honestly it's often an important tool for projects to see success - you
+just need to be clear about what your metrics actually are. Don't trick people.
+Give people the means to reproduce your findings. All that good science shit.
 
-Most systems performance metrics boil down
-to these two:
+Most systems performance metrics boil down to these two:
 
 * latency - the time that an operation takes
 * throughput - how many operations can be performed in some unit of time
@@ -365,33 +360,6 @@ information when configured to do so](https://twitter.com/sadisticsystems/status
 Having a profiler built-in makes finding bottlenecks
 quite easy, and in a quick glance it's easy to see
 where optimization effort may be well spent.
-
-## benchmarketing
-
-Sometimes publishing performance numbers is an important aspect of marketing
-your system. When performed by a project that is favored by someone, they will
-usually feel pride about those numbers. When performed by a non-preferred
-project, the same person may call-out the publishing of metrics as a nefarious
-effort to trick people into using a system using cherry-picked metrics.
-
-The fact is, in our attention-scarce internet spheres of communication, metrics
-are often an effective means of capturing interest. Two bar charts without any
-labels other than something like "higher is better" is deceptive. We can
-capture interest in ethical ways by being clear about what, specifically, we
-are measuring.
-
-There are, of course, perverse incentives to minimize this context, because it
-clutters up the call-to-action to get someone to try out the project that you
-have put so much hard work into. Attention is scarce, and you do need to be
-careful about how you present context.
-
-You should mention any hardware in the critical path relating to the
-benchmark's outcome. You should mention the workload employed.  Ideally you
-should link to the code so people can reproduce it.
-
-There is a time and place for
-[benchmarketing](http://smalldatum.blogspot.com/2014/06/benchmarketing.html)
-as long as it is not deceptive.
 
 ## experimental design
 
