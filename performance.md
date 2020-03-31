@@ -7,9 +7,6 @@
 
 ## overview
 
-Performance is about being thoughtful about the metrics that matter to us and
-allowing ourselves to be aware of them while making decisions.
-
 This guide contains basic information for getting started with
 performance-sensitive engineering.
 
@@ -17,6 +14,9 @@ The target audience is the Rust ecosystem, where many people are now trying
 their hands at optimization for the first time. But the vast majority of this
 document applies generally to optimizing programs running on machines, with a
 few of the hardware effects mentioned being specific to x86 circa 2020.
+
+Performance is about being thoughtful about the metrics that matter to us and
+allowing ourselves to be aware of them while making decisions.
 
 These materials are based on Tyler Neely's Rust workshop content, and have been
 inspired by the writings of
