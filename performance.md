@@ -122,13 +122,40 @@ make the important metrics worse due to under-investment.
 
 We must select our measurements with care.
 
+By making decisions while data is available, we are able to cut through so
+much bullshit. We have so many ideas that our experience tells us should
+cause our code to improve, but it simply isn't true when we actually measure.
+
+Don't be macho. Your ideas are wrong. Make decisions based on data and limit
+the damage of your ignorance.
+
 ## experimental design
 
-Experimental design is about
+Experimental design is about performing measurement in a way that is careful
+to account for the various effects that are likely to influence performance.
+
+Modern computer systems are amazingly difficult to harvest high-quality
+measurements from. Things that can significantly influence performance:
+
+* [CPU frequency scaling](#frequency-scaling)
+  * did better compilation cause your CPU to heat up? your **better** code may run **slower**
+  * is your laptop running on battery? **better** code may run **slower**
+* is the data you're reading from disk already in the OS pagecache?
+  * the second run doesn't pay the disk costs. **better** code may run **slower** than slower code with a warmed cache
+  * can be dropped via `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches` (thanks [@vertexclique](https://twitter.com/vertexclique))
+* is your memory becoming more fragmented?
+  * can be compacted on a system-wide basis via `echo 1 | sudo tee /proc/sys/vm/compact_memory` (thanks [@knweiss](https://twitter.com/knweiss))
+* [The linking order used to combine otherwise identical compiled code objects when creating a binary](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
+  * can result in 10% more cycles with zero code changes. **better** code may run **slower**
+* [yelling near your computer](https://www.youtube.com/watch?v=tDacjrSCeq4)
+  * having too much fun? **better** code may run **slower**
+* [Are you accessing different memory locations that are 4k apart?](#4k-aliasing)
+
+Measuring the runtime of a workload before and after applying a diff is unsound
+because there are so many other variables that impact performance.
 
 If an experiment were a pure math function, changing our input variables would
 be the only thing that would influence the change of our observed outputs.
-
 Unfortunately, our systems are quite complex, and there are many factors which
 may influence the quality of our measurements.
 
@@ -223,6 +250,9 @@ trying to optimize.
 
 Further reading:
 
+* [How Not to Measure Computer System Performance](https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html)
+* [Producing Wrong Data Without Doing Anything Obviously Wrong! - ASPLOS 2009](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
+* [ASPLOS 13 - STABILIZER: Statistically Sound Performance Evaluation - ASPLOS 2013](https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf)
 * The Art of Computer Systems Performance Analysis by Raj Jain
 
 
