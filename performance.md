@@ -128,13 +128,15 @@ By making decisions while data is available, we are able to cut through so
 much bullshit. We have so many ideas that our experience tells us should
 cause our code to improve, but it simply isn't true when we actually measure.
 
-Don't be macho. Your ideas are wrong. Make decisions while having real data
-on-hand and limit the damage of your ignorance.
+Don't be macho. Make decisions while having real data on-hand and limit the
+damage of hubris.
 
 ## experimental design
 
 Experimental design is about performing measurement in a way that is careful
 to account for the various effects that are likely to influence performance.
+Measuring the runtime of a workload before and after applying a diff is unsound
+because there are so many other variables that impact performance.
 
 Modern computer systems are amazingly difficult to harvest high-quality
 measurements from. Things that can significantly influence performance:
@@ -153,8 +155,6 @@ measurements from. Things that can significantly influence performance:
   * having too much fun? **better** code may run **slower**
 * [Are you accessing different memory locations that are 4k apart?](#4k-aliasing)
 
-Measuring the runtime of a workload before and after applying a diff is unsound
-because there are so many other variables that impact performance.
 
 If an experiment were a pure math function, changing our input variables would
 be the only thing that would influence the change of our observed outputs.
