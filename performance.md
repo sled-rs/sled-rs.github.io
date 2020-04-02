@@ -5,6 +5,8 @@
 [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
 [![sponsors](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
 
+WARNING: Viewer discretion is advised.
+
 ## overview
 
 This guide contains basic information for getting started with
@@ -126,8 +128,8 @@ By making decisions while data is available, we are able to cut through so
 much bullshit. We have so many ideas that our experience tells us should
 cause our code to improve, but it simply isn't true when we actually measure.
 
-Don't be macho. Your ideas are wrong. Make decisions based on data and limit
-the damage of your ignorance.
+Don't be macho. Your ideas are wrong. Make decisions while having real data
+on-hand and limit the damage of your ignorance.
 
 ## experimental design
 
