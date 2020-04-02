@@ -138,7 +138,7 @@ to account for the various effects that are likely to influence performance.
 Measuring the runtime of a workload before and after applying a diff is unsound
 because there are so many other variables that impact performance.
 
-Modern computer systems are amazingly difficult to harvest high-quality
+Modern computer systems can be surprisingly difficult to harvest high-quality
 measurements from. Things that can significantly influence performance:
 
 * [CPU frequency scaling](#frequency-scaling)
@@ -146,9 +146,9 @@ measurements from. Things that can significantly influence performance:
   * is your laptop running on battery? **better** code may run **slower**
 * is the data you're reading from disk already in the OS pagecache?
   * the second run doesn't pay the disk costs. **better** code may run **slower** than slower code with a warmed cache
-  * can be dropped via `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches` (thanks [@vertexclique](https://twitter.com/vertexclique))
+  * pagecache can be dropped via `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches` (thanks [@vertexclique](https://twitter.com/vertexclique))
 * is your memory becoming more fragmented?
-  * can be compacted on a system-wide basis via `echo 1 | sudo tee /proc/sys/vm/compact_memory` (thanks [@knweiss](https://twitter.com/knweiss))
+  * system-wide memory can be compacted via `echo 1 | sudo tee /proc/sys/vm/compact_memory` (thanks [@knweiss](https://twitter.com/knweiss))
 * [The linking order used to combine otherwise identical compiled code objects when creating a binary](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
   * can result in 10% more cycles with zero code changes. **better** code may run **slower**
 * [yelling near your computer](https://www.youtube.com/watch?v=tDacjrSCeq4)
@@ -651,3 +651,8 @@ status of the effort to support this. It's a big deal. There's a reason we still
 use Fortran libraries in much of our linear algebra (and implicitly, our machine
 learning) libraries.
 
+```
+Micro-benchmarks are like a microscope.
+Magnification is high, but what the heck are you looking at?
+```
+- Cliff Click
