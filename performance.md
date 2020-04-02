@@ -656,3 +656,5 @@ Micro-benchmarks are like a microscope.
 Magnification is high, but what the heck are you looking at?
 ```
 - Cliff Click
+
+https://assets.azul.com/files/Cliff_Click_Art_of_Java_Benchmarking.pdf
