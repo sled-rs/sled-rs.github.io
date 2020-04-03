@@ -17,6 +17,11 @@ their hands at optimization for the first time. But the vast majority of this
 document applies generally to optimizing programs running on machines, with a
 few of the hardware effects mentioned being specific to x86 circa 2020.
 
+This guide brings together ideas from psychology, hardware, queue theory,
+statistics, economics, management, distributed systems, concurrency and systems
+engineering with the goals of helping you to be less of an asshole and write
+code that tends to be fast.
+
 Performance is about being thoughtful about the metrics that matter to us and
 allowing ourselves to be aware of them while making decisions.
 
@@ -29,13 +34,15 @@ inspired by the writings of
 [Pedro Ramalhete](http://concurrencyfreaks.blogspot.com/2019/11/is-left-right-generic-concurrency.html)
 and others.
 
-Those workshops are the primary means of supporting sled development costs.
+Those workshops were the primary means of supporting sled development costs.
 Unfortunately, they are now on hold due to coronavirus concerns. If you feel
 like this information is useful, please consider [supporting my
 efforts](https://github.com/sponsors/spacejam) to share knowledge and
 productionize cutting edge database research with implementations in Rust :)
 
 ## contents
+
+CHAPTER: MODELS, MEASUREMENTS AND MINDS
 
 * [principles](#principles)
 * [experimental design](#experimental-design)
@@ -44,8 +51,20 @@ productionize cutting edge database research with implementations in Rust :)
   * [measuring latency](#measuring-latency)
   * [productivity](#productivity)
   * [case study: sled](#sled-case-study)
+* [queue theory](#queue-theory)
+* [amdahl's law](#amdahls-law)
 * [universal scalability law](#universal-scalability-law)
+
+Chapter 6: UR ASS IS IN TIME AND SPACE
+
+* trade-offs
+  * time vs space
+  * latency vs throughput
+
+
+Chapter: THE MACHINE
 * [computation](#computation)
+* [hardware effects](#hardware-effects)
   * [cache](#cache)
   * [frequency scaling](#frequency-scaling)
   * [branch misprediction](#branch-misprediction)
@@ -65,6 +84,7 @@ productionize cutting edge database research with implementations in Rust :)
   * [software prefetching](#software-prefetching)
   * [store buffer capacity](#store-buffer-capacity)
   * [write combining](#write-combining)
+
 * [top-down analysis](#top-down-analysis)
 * [threads](#threads)
 * [async tasks](#async-tasks)
@@ -88,15 +108,14 @@ You just are cognitive biases.
 
 The first thing to consider is that our minds are pure shit and everything we
 know is wrong. We must accept our fallibility before embarking down the path to
-fast-as-fuck machinery. Assumption is the extrapolation of the past into the
-future. To the extent that the two are not identical, we are wrong. They are
-never identical. Assumptions often have a short shelf-life that we habitually
-fail to check the expiration date on.
+fast-as-fuck machinery.
 
 We build towers of assumptions that are bound to specific contexts, and when the
 conditions that caused us to form these beliefs change, we tend not to revisit
 the now-invalidated beliefs. Cache invalidation is hard when we are so rarely
 aware of the dependency graphs of what we believe.
+
+All of our beliefs are based on past experiences. The future is not the past.
 
 So, we measure. Even when we're convinced that we're right. Because we are
 always wrong to some extent, and we are fundamentally incapable of altering this
@@ -106,14 +125,15 @@ Corollary: allow yourself to be wrong. Allowing yourself to be wrong with
 yourself, your collaborators, and in public is a key optimization for learning
 faster and building better things with less effort and in less time.
 
-Luckily for us, machines tend to be quite amenable to measurement. We built them
-that way. Indeed, constructing them to be somewhat measurable in the first
-place is the only reason we've been able to produce them at all despite our many
-shortcomings. We took the predecessor to your current machine, chose some
-metrics to improve, made a huge number of mistakes while continuing to measure,
-and occasionally we got lucky and the metrics we cared about improved enough to
-alter the production lines - crystallizing the successful results into new
-production processes that eventually put your machine in front of you.
+Luckily for us, machines tend to be quite amenable to measurement. We built
+them that way. Indeed, constructing them to be somewhat measurable in the first
+place was the only reason we were able to assemble them at all despite our
+innumerable shortcomings. We took the predecessor to your current machine,
+chose some metrics to improve, made a huge number of mistakes while continuing
+to measure, and occasionally we got lucky: the metrics we cared about improved
+enough to alter production lines, crystallizing our occasionally successful
+results into new production processes that eventually put your machine in front
+of you.
 
 We must measure.
 
@@ -122,7 +142,7 @@ improvements in relevant metrics like total cost of ownership, responsiveness,
 etc... If a metric doesn't help a human, it's just a vanity pursuit that may
 make the important metrics worse due to under-investment.
 
-We must select our measurements with care.
+We must select our measurements with care. Our time is precious.
 
 By making decisions while data is available, we are able to cut through so
 much bullshit. We have so many ideas that our experience tells us should
@@ -133,7 +153,10 @@ damage of hubris.
 
 ## experimental design
 
-Experimental design is about performing measurement in a way that is careful
+Experimental design is about selecting metrics, avoiding bias, achieving
+reproducible results without wasting too much time.
+
+Performing measurement in a way that is careful
 to account for the various effects that are likely to influence performance.
 Measuring the runtime of a workload before and after applying a diff is unsound
 because there are so many other variables that impact performance.
@@ -652,9 +675,65 @@ use Fortran libraries in much of our linear algebra (and implicitly, our machine
 learning) libraries.
 
 ```
+Everybody is ignorant, only on different subjects
+```
+- Will Rogers
+
+```
+It's never what we don't know that stops us. It's what we do know that just ain't so.
+```
+- Mark Twain
+
+```
 Micro-benchmarks are like a microscope.
-Magnification is high, but what the heck are you looking at?
+Magnification is high, but what the
+heck are you looking at?
 ```
 - Cliff Click
 
 https://assets.azul.com/files/Cliff_Click_Art_of_Java_Benchmarking.pdf
+
+https://timharris.uk/misc/five-ways.pdf
+  * test algorithms while being smallest possible as well as clearly overflowing caches
+  * be aware of runaway unfairness issues in concurrent code due to caching etc...
+  * ideally, keep your correctness assertions on everywhere, even under perf analysis. don't measure broken code.
+  * the main risk is that variance is more significant than actual effects
+  * nail down the experimental environment
+    * pin threads to cpus
+    * pin memory to sockets
+    * hyperthreading is disabled
+    * power management features disabled
+    * double check the socket that owns important memory using libnuma etc...
+  * establish baseline overhead vs non-concurrent version
+  * expect speedup to be linear with each thread, if not, why not?
+  * link these 3 things to increase chances of causal link:
+    * timing or throughput info
+    * resource usage: instructions, memory use, last-level cache misses, etc...
+    * actual code changes
+
+https://randomascii.wordpress.com/2018/02/04/what-we-talk-about-when-we-talk-about-performance/
+  * "90% faster" and "90% speed-up" etc... can easily be misinterpreted
+  * use ratios instead of performance
+
+A guide to experimental algorithmics - Catherine C McGeoch
+  terms:
+  * experimental algorithmics - the study of algorithms (and programs, data
+    structures, etc...) through experimentation
+
+  analysis:
+    performance predictions about inputs and machines in terms of time, space, quality, etc...
+  design:
+    building faster and better algorithms (structures, programs, etc...)
+
+[Brief announcement: persistent unfairness arising from cache residency imbalance](https://dl.acm.org/doi/10.1145/2612669.2612703)
+  * concurrent algorithms often become extremely unfair, favoring the winner of the last operation,
+    making their caches hotter and allowing them to increase the unfairness
+
+my techniques:
+* gaze into the future. before optimizing at all, try to just comment out the
+  code and see how fast the system would be if the optimization were infinitely
+  successful. don't bother optimizing things that can't meaningfully improve your
+  metrics even if improved infinitely. This also gives you a great sense of
+  priorities by knowing proportionally what aspects of your system are really
+  slow.
+* "if you didn't optimize it, it ain't optimized"
