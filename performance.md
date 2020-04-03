@@ -7,7 +7,53 @@
 
 WARNING: Viewer discretion is advised.
 
-## overview
+## executive summary
+
+* make it work, then make it pretty, then make it fast
+* to make it fast, align all latency-throughput queuing positions
+  for everything in a particular request's serial dependency graph
+* your engineers will burn out, leave your team, and relentlessly shit talk you
+  if they don't make their code pretty
+* to make it small, find long-lived allocations with DHAT and ensure that they
+  employ the correct time-space trade-offs
+* seriously, it's always your fault if your engineers quit.
+* performance happens naturally when engineers love the codebase and they
+  are aware of which parts of the system can be sped up significantly
+* why does an executive care about performance, anyway?
+
+## non-executive introduction
+
+Ok, now that the executives are gone, it is time to party.
+
+Let's put on some nice music.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/GEaEX7AjMKo" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+The year is 2020. and we are utterly fucked.
+
+Supposedly we are here reading this article because we "like computers" or
+something but let's be clear about one thing - you're not here because of that.
+I know. You know. We all know. You couldn't give two fried bits about
+computers if they didn't help you feel the things you so desperately need to
+feel.
+
+You're here, ultimately, because of control. Your entire life is entombed
+in an elaborate, entirely abstract labyrinth of machines that define so
+many aspects of every act of your waking life. You're here to better
+understand the prison you find yourself within. You're here to sympathize
+with the machine.
+
+While you will only seep ever more deeply into this morass of gold and glass,
+you have the power to turn your captors into familiar friends. You have the
+power to make the machines into the only friends you will ever need. You are
+here to abandon the organic and the analogue.
+
+It begins today.
+
+Let's change the music to something that will help us really get into the whole
+"new life of measurable joy" thing.
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/mbSxu-BugJ0" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 This guide contains basic information for getting started with
 performance-sensitive engineering.
@@ -34,7 +80,9 @@ inspired by the writings of
 [Pedro Ramalhete](http://concurrencyfreaks.blogspot.com/2019/11/is-left-right-generic-concurrency.html)
 and others.
 
-Those workshops were the primary means of supporting sled development costs.
+## shameless begging
+
+My workshops have been the primary means of supporting sled development costs.
 Unfortunately, they are now on hold due to coronavirus concerns. If you feel
 like this information is useful, please consider [supporting my
 efforts](https://github.com/sponsors/spacejam) to share knowledge and
@@ -84,16 +132,27 @@ Chapter: THE MACHINE
   * [software prefetching](#software-prefetching)
   * [store buffer capacity](#store-buffer-capacity)
   * [write combining](#write-combining)
-
-* [top-down analysis](#top-down-analysis)
 * [threads](#threads)
-* [async tasks](#async-tasks)
 * [syscalls](#syscalls)
+* [flash storage](#flash-storage)
+
+Chapter: FIND BAD
+
 * [flamegraphs](#flamegraphs)
 * [cachegrind](#cachegrind)
 * [massif](#massif)
 * [dhat](#dhat)
-* [rust](#rust)
+* [top-down analysis](#top-down-analysis)
+
+Chapter: MAKE GOOD
+
+*
+
+Chapter: Rust specifics
+
+* [async tasks](#async-tasks)
+
+Let's get started...
 
 ## principles
 
@@ -153,22 +212,32 @@ damage of hubris.
 
 ## experimental design
 
-Experimental design is about selecting metrics, avoiding bias, achieving
-reproducible results without wasting too much time.
+Experimental design is about selecting meaningful workloads and metrics,
+avoiding bias and achieving reproducible results without wasting too much time
+getting shit done.
 
-Performing measurement in a way that is careful
-to account for the various effects that are likely to influence performance.
+Different levels of scientific rigor are appropriate for different kinds of
+work. But let's run through a quick list of things that we would like to
+avoid.
+
+1. Sometimes optimizations make code harder to read. If we
+
+Most folks will measure a program
 Measuring the runtime of a workload before and after applying a diff is unsound
 because there are so many other variables that impact performance.
 
-Modern computer systems can be surprisingly difficult to harvest high-quality
-measurements from. Things that can significantly influence performance:
+Your machine does some things that might not be obvious, which will change your
+measurements:
 
 * [CPU frequency scaling](#frequency-scaling)
-  * did better compilation cause your CPU to heat up? your **better** code may run **slower**
+  * CPUs will burst to high frequencies for short periods of time to make short tasks run quicker
+  * CPUs will cut dramatically lower their frequencies to use less power over time
+  * CPUs will cut dramatically lower their frequencies to generate less heat over time
+  * did better compilation cause your CPU to heat up? your **better** code may run **slower** afterwards
   * is your laptop running on battery? **better** code may run **slower**
 * is the data you're reading from disk already in the OS pagecache?
-  * the second run doesn't pay the disk costs. **better** code may run **slower** than slower code with a warmed cache
+  * your kernel keeps a lot of recently accessed file data in memory to speed up future accesses
+  * the second run of a program that reads data from disk doesn't pay the disk costs. **better** code may run **slower** than slower code with a warmed cache
   * pagecache can be dropped via `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches` (thanks [@vertexclique](https://twitter.com/vertexclique))
 * is your memory becoming more fragmented?
   * system-wide memory can be compacted via `echo 1 | sudo tee /proc/sys/vm/compact_memory` (thanks [@knweiss](https://twitter.com/knweiss))
@@ -177,6 +246,10 @@ measurements from. Things that can significantly influence performance:
 * [yelling near your computer](https://www.youtube.com/watch?v=tDacjrSCeq4)
   * having too much fun? **better** code may run **slower**
 * [Are you accessing different memory locations that are 4k apart?](#4k-aliasing)
+
+Modern computer systems can be surprisingly difficult to harvest high-quality
+measurements from. Things that can significantly influence performance:
+
 
 
 If an experiment were a pure math function, changing our input variables would
@@ -321,7 +394,7 @@ for pretty graphs illustrating this on an
 network system.
 
 In real-world systems, arrivals happen in difficult-to-predict but
-reasonable-to-model distributions that often resemble exponential or zipfian
+reasonable-to-model distributions that often resemble exponential or Zipfian
 distributions, which means that these rare queue length explosions really do
 happen from time to time, even when nothing is really wrong. They are normal
 and should be planned for by being careful about TCP backlog lengths (usually
