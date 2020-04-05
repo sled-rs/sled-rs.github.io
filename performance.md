@@ -160,7 +160,7 @@ Let's kick this shit up! Here's what it's gonna look like...
   * [threads](#threads)
   * [syscalls](#syscalls)
   * [flash storage](#flash-storage)
-  * ##### CHAPTER 0b011: FIND BAD
+* ##### CHAPTER 0b011: FIND BAD
   * [flamegraphs](#flamegraphs)
   * [cachegrind](#cachegrind)
   * [massif](#massif)
@@ -173,7 +173,6 @@ Let's kick this shit up! Here's what it's gonna look like...
   * parallelism
   * batching
   * flat-combining
-
 * ##### CHAPTER 0b101: Rust specifics
   * [async tasks](#async-tasks)
   * threads
@@ -774,6 +773,16 @@ processing algorithms.
 Further reading:
 
 * http://www.perfdynamics.com/Manifesto/USLscalability.html
+
+## trade-offs
+
+### time vs space
+### memory pressure vs contention
+### latency vs throughput
+### parallelism vs concurrency
+### the RUM conjecture
+
+# CHAPTER 0b0010: THE MACHINE
 
 ## computation
 
