@@ -118,74 +118,69 @@ I love you.
 
 Let's kick this shit up! Here's what it's gonna look like...
 
-##### CHAPTER 0b000: MODELS, MEASUREMENTS AND MINDS
+* ##### CHAPTER 0b000: MODELS, MEASUREMENTS AND MINDS
+  * [principles](#principles)
+  * [metrics: latency, throughput, utilization and saturation](#metrics)
+    * [measuring latency](#measuring-latency)
+    * [productivity](#productivity)
+    * [case study: sled](#sled-case-study)
+  * [experimental design](#experimental-design)
+    * [experiment checklist](#experiment-checklist)
+* ##### CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
+  * [amdahl's law](#amdahls-law)
+  * [universal scalability law](#universal-scalability-law)
+  * [trade-offs](#trade-offs)
+    * time vs space
+    * memory pressure vs contention
+    * latency vs throughput
+    * parallelism vs concurrency
+    * the RUM conjecture
+* ##### CHAPTER 0b0010: THE MACHINE
+  * [computation](#computation)
+  * [hardware effects](#hardware-effects)
+    * [cache](#cache)
+    * [frequency scaling](#frequency-scaling)
+    * [branch misprediction](#branch-misprediction)
+    * [branch target misprediction](#branch-target-misprediction)
+    * [4k aliasing](#4k-aliasing)
+    * [bandwidth saturation](#bandwidth-saturation)
+    * [cache conflicts](#cache-conflicts)
+    * [cache/memory hierarchy bandwidth](#cache/memory-hierarchy-bandwidth)
+    * [data dependencies](#data-dependencies)
+    * [denormal floating point numbers](#denormal-floating-point-numbers)
+    * [DRAM refresh interval](#DRAM-refresh-interval)
+    * [false sharing](#false-sharing)
+    * [hardware prefetching](#hardware-prefetching)
+    * [memory-bound program](#memory-bound-program)
+    * [misaligned accesses](#misaligned-accesses)
+    * [non-temporal stores](#non-temporal-stores)
+    * [software prefetching](#software-prefetching)
+    * [store buffer capacity](#store-buffer-capacity)
+    * [write combining](#write-combining)
+  * [threads](#threads)
+  * [syscalls](#syscalls)
+  * [flash storage](#flash-storage)
+  * ##### CHAPTER 0b011: FIND BAD
+  * [flamegraphs](#flamegraphs)
+  * [cachegrind](#cachegrind)
+  * [massif](#massif)
+  * [dhat](#dhat)
+  * [top-down analysis](#top-down-analysis)
+  * llvm-mca
+  * coz
+* ##### CHAPTER 00000100: MAKE GOOD
+  * concurrency
+  * parallelism
+  * batching
+  * flat-combining
 
-* [principles](#principles)
-* [metrics: latency, throughput, utilization and saturation](#metrics)
-  * [measuring latency](#measuring-latency)
-  * [productivity](#productivity)
-  * [case study: sled](#sled-case-study)
-* [experimental design](#experimental-design)
-  * [experiment checklist](#experiment-checklist)
-
-##### CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
-
-* [amdahl's law](#amdahls-law)
-* [universal scalability law](#universal-scalability-law)
-* parallelism is the opposite of concurrency
-* trade-offs
-  * time vs space
-  * memory pressure vs contention
-  * latency vs throughput
-  * the RUM conjecture
-
-##### CHAPTER 0b0010: THE MACHINE
-
-* [computation](#computation)
-* [hardware effects](#hardware-effects)
-  * [cache](#cache)
-  * [frequency scaling](#frequency-scaling)
-  * [branch misprediction](#branch-misprediction)
-  * [branch target misprediction](#branch-target-misprediction)
-  * [4k aliasing](#4k-aliasing)
-  * [bandwidth saturation](#bandwidth-saturation)
-  * [cache conflicts](#cache-conflicts)
-  * [cache/memory hierarchy bandwidth](#cache/memory-hierarchy-bandwidth)
-  * [data dependencies](#data-dependencies)
-  * [denormal floating point numbers](#denormal-floating-point-numbers)
-  * [DRAM refresh interval](#DRAM-refresh-interval)
-  * [false sharing](#false-sharing)
-  * [hardware prefetching](#hardware-prefetching)
-  * [memory-bound program](#memory-bound-program)
-  * [misaligned accesses](#misaligned-accesses)
-  * [non-temporal stores](#non-temporal-stores)
-  * [software prefetching](#software-prefetching)
-  * [store buffer capacity](#store-buffer-capacity)
-  * [write combining](#write-combining)
-* [threads](#threads)
-* [syscalls](#syscalls)
-* [flash storage](#flash-storage)
-
-##### CHAPTER 0b011: FIND BAD
-
-* [flamegraphs](#flamegraphs)
-* [cachegrind](#cachegrind)
-* [massif](#massif)
-* [dhat](#dhat)
-* [top-down analysis](#top-down-analysis)
-* llvm-mca
-* coz
-
-##### CHAPTER 00000100: MAKE GOOD
-
-* concurrency
-  *
-
-##### CHAPTER 0b101: Rust specifics
-
-* [async tasks](#async-tasks)
+* ##### CHAPTER 0b101: Rust specifics
+  * [async tasks](#async-tasks)
+  * threads
 
 # IT BEGINS
+
+# CHAPTER 0b000: MODELS, MEASUREMENTS AND MINDS
 
 ## principles
 
@@ -758,6 +753,8 @@ There are sometimes parts of our programs that can be parallelized, while others
 must be executed in a serial fashion. It shows that throwing more resources at a
 workload will not usually cause that workload to complete in a fraction of time
 
+# CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
+
 ## universal scalability law
 
 The USL is an excellent way to reason about the potential gains (or negative
@@ -960,3 +957,5 @@ my techniques:
 * inserts delays, causing potential relative speedups to be illuminated
 
 https://github.com/alexcrichton/coz-rs
+
+anti-normative-positivism
