@@ -50,16 +50,12 @@ here to abandon the organic and the analogue.
 
 It begins today.
 
-Let's change the music to something that will help us really get into the whole
-"new life of measurable joy" thing.
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/mbSxu-BugJ0" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
 This guide contains basic information for getting started with
-performance-sensitive engineering.
+performance-sensitive engineering. I say "basic" sort of sarcastically.
+I think everyone will learn something here. I know I certainly have ;)
 
 The target audience is the Rust ecosystem, where many people are now trying
-their hands at optimization for the first time. But the vast majority of this
+their hands at optimization for the first time. But 97% of this
 document applies generally to optimizing programs running on machines, with a
 few of the hardware effects mentioned being specific to x86 circa 2020.
 
@@ -80,7 +76,7 @@ inspired by the writings of
 [Pedro Ramalhete](http://concurrencyfreaks.blogspot.com/2019/11/is-left-right-generic-concurrency.html)
 and others.
 
-## shameless begging
+## shameless, emotionally annihiliating begging
 
 My workshops have been the primary means of supporting sled development costs.
 Unfortunately, they are now on hold due to coronavirus concerns. If you feel
@@ -88,29 +84,36 @@ like this information is useful, please consider [supporting my
 efforts](https://github.com/sponsors/spacejam) to share knowledge and
 productionize cutting edge database research with implementations in Rust :)
 
-## contents
+I love you.
 
-CHAPTER: MODELS, MEASUREMENTS AND MINDS
+# contents
+
+Let's kick this shit up! Here's what it's gonna look like...
+
+CHAPTER 0b000: MODELS, MEASUREMENTS AND MINDS
 
 * [principles](#principles)
-* [experimental design](#experimental-design)
-  * [experiment checklist](#experiment-checklist)
 * [metrics: latency, throughput, utilization and saturation](#metrics)
   * [measuring latency](#measuring-latency)
   * [productivity](#productivity)
   * [case study: sled](#sled-case-study)
+* [experimental design](#experimental-design)
+  * [experiment checklist](#experiment-checklist)
+
+CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
+
 * [queue theory](#queue-theory)
 * [amdahl's law](#amdahls-law)
 * [universal scalability law](#universal-scalability-law)
-
-Chapter 6: UR ASS IS IN TIME AND SPACE
-
+* parallelism is the opposite of concurrency
 * trade-offs
   * time vs space
+  * memory pressure vs contention
   * latency vs throughput
+  * the RUM conjecture
 
+CHAPTER 0b0010: THE MACHINE
 
-Chapter: THE MACHINE
 * [computation](#computation)
 * [hardware effects](#hardware-effects)
   * [cache](#cache)
@@ -136,23 +139,25 @@ Chapter: THE MACHINE
 * [syscalls](#syscalls)
 * [flash storage](#flash-storage)
 
-Chapter: FIND BAD
+CHAPTER 0b011: FIND BAD
 
 * [flamegraphs](#flamegraphs)
 * [cachegrind](#cachegrind)
 * [massif](#massif)
 * [dhat](#dhat)
 * [top-down analysis](#top-down-analysis)
+* llvm-mca
 
-Chapter: MAKE GOOD
+CHAPTER 00000100: MAKE GOOD
 
-*
+* concurrency
+  *
 
-Chapter: Rust specifics
+CHAPTER 0b101: Rust specifics
 
 * [async tasks](#async-tasks)
 
-Let's get started...
+# IT BEGINS
 
 ## principles
 
@@ -783,6 +788,7 @@ https://timharris.uk/misc/five-ways.pdf
     * timing or throughput info
     * resource usage: instructions, memory use, last-level cache misses, etc...
     * actual code changes
+  * before making something faster, duplicate the operation you want to chop out, see if it makes measurements different
 
 https://randomascii.wordpress.com/2018/02/04/what-we-talk-about-when-we-talk-about-performance/
   * "90% faster" and "90% speed-up" etc... can easily be misinterpreted
@@ -810,3 +816,6 @@ my techniques:
   priorities by knowing proportionally what aspects of your system are really
   slow.
 * "if you didn't optimize it, it ain't optimized"
+
+[COZ:  Finding  Code  that  Counts  with  Causal  Profiling](https://arxiv.org/pdf/1608.03676v1.pdf)
+* inserts delays, causing potential relative speedups to be illuminated
