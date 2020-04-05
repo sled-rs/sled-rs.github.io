@@ -114,7 +114,7 @@ I love you.
 
 Let's kick this shit up! Here's what it's gonna look like...
 
-CHAPTER 0b000: MODELS, MEASUREMENTS AND MINDS
+##### CHAPTER 0b000: MODELS, MEASUREMENTS AND MINDS
 
 * [principles](#principles)
 * [metrics: latency, throughput, utilization and saturation](#metrics)
@@ -124,7 +124,7 @@ CHAPTER 0b000: MODELS, MEASUREMENTS AND MINDS
 * [experimental design](#experimental-design)
   * [experiment checklist](#experiment-checklist)
 
-CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
+##### CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
 
 * [queue theory](#queue-theory)
 * [amdahl's law](#amdahls-law)
@@ -136,7 +136,7 @@ CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
   * latency vs throughput
   * the RUM conjecture
 
-CHAPTER 0b0010: THE MACHINE
+##### CHAPTER 0b0010: THE MACHINE
 
 * [computation](#computation)
 * [hardware effects](#hardware-effects)
@@ -163,7 +163,7 @@ CHAPTER 0b0010: THE MACHINE
 * [syscalls](#syscalls)
 * [flash storage](#flash-storage)
 
-CHAPTER 0b011: FIND BAD
+##### CHAPTER 0b011: FIND BAD
 
 * [flamegraphs](#flamegraphs)
 * [cachegrind](#cachegrind)
@@ -171,13 +171,14 @@ CHAPTER 0b011: FIND BAD
 * [dhat](#dhat)
 * [top-down analysis](#top-down-analysis)
 * llvm-mca
+* coz
 
-CHAPTER 00000100: MAKE GOOD
+##### CHAPTER 00000100: MAKE GOOD
 
 * concurrency
   *
 
-CHAPTER 0b101: Rust specifics
+##### CHAPTER 0b101: Rust specifics
 
 * [async tasks](#async-tasks)
 
