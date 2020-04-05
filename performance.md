@@ -68,7 +68,8 @@ you experience joy and place orders for more toilet paper.
 
 It begins today.
 
-<img alt="warm sun rising over the water with a boat and mountains in the background" src="http://sled.rs/art/sunrise.jpg">
+![warm sun rising over the water with a boat and mountains in the background](art/sunrise.jpg)
+
 
 This guide contains basic information for getting started with
 performance-sensitive engineering. I think everyone will learn
