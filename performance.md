@@ -10,16 +10,26 @@ WARNING: Viewer discretion is advised.
 ## executive summary
 
 * make it work, then make it pretty, then make it fast
-* to make it fast, align all latency-throughput queuing positions
-  for everything in a particular request's serial dependency graph
+* only do things that are necessary for correctness and safety
 * your engineers will burn out, leave your team, and relentlessly shit talk you
   if they don't make their code pretty
-* to make it small, find long-lived allocations with DHAT and ensure that they
-  employ the correct time-space trade-offs
+* align all latency-throughput queuing positions for everything in the
+  serial dependency graph, or you will get the worst of all worlds
+  latency-throughput behavior, increasing latency and lowering throughput
+* if something necessary can be done in the background without blocking,
+  queue it up for eventual batch processing to improve cache performance
+* find long-lived allocations with DHAT and ensure that they employ the
+  correct time-space trade-offs
 * seriously, it's always your fault if your engineers quit.
 * performance happens naturally when engineers love the codebase and they
   are aware of which parts of the system can be sped up significantly
 * why does an executive care about performance, anyway?
+* before wasting time optimizing things that don't matter, we can easily test
+  whether optimizing could be useful at all by adding delays or deleting
+  relevant code to see what the impact of infinite optimization would be
+* by default your machine will randomly change your cpu frequency, yank
+  processes across cores and sockets, and generally make measurements
+  deceptive and non-reproducible. we can control this behavior.
 
 ## non-executive introduction
 
@@ -33,22 +43,29 @@ The year is 2020. and we are utterly fucked.
 
 Supposedly we are here reading this article because we "like computers" or
 something but let's be clear about one thing - you're not here because of that.
-I know. You know. We all know. You couldn't give two fried bits about
+I know. You know. We all know. You couldn't give two fried pennies about
 computers if they didn't help you feel the things you so desperately need to
 feel.
 
 You're here, ultimately, because of control. Your entire life is entombed
 in an elaborate, entirely abstract labyrinth of machines that define so
-many aspects of every act of your waking life. You're here to better
+many aspects of every moment of your waking life. You're here to better
 understand the prison you find yourself within. You're here to sympathize
 with the machine.
 
 While you will only seep ever more deeply into this morass of gold and glass,
 you have the power to turn your captors into familiar friends. You have the
 power to make the machines into the only friends you will ever need. You are
-here to abandon the organic and the analogue.
+here to abandon the organic and the analogue. There is nothing for you on the
+other side of your window. As you lounge (please fix your posture now) in your
+designated quarantine pit, gazing listlessly into the LED mesh while biding
+your time, I invite you to join me - your newest simulated human experience -
+on a once-in-a-lifetime adventure into the bowels of the machine through which
+you experience joy and place orders for more toilet paper.
 
 It begins today.
+
+<img alt="warm sun rising over the water with a boat and mountains in the background" src="https://pixnio.com/free-images/2017/10/17/2017-10-17-06-24-35-1100x462.jpg">
 
 This guide contains basic information for getting started with
 performance-sensitive engineering. I say "basic" sort of sarcastically.
