@@ -780,6 +780,10 @@ Further reading:
 ### memory pressure vs contention
 ### latency vs throughput
 ### parallelism vs concurrency
+
+CppCon 2019: Eric Niebler, David Hollman “A Unifying Abstraction for Async in C++”
+<iframe width="560" height="315" src="https://www.youtube.com/embed/tF-Nz4aRWAM?start=498" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 ### the RUM conjecture
 
 # CHAPTER 0b0010: THE MACHINE
@@ -968,3 +972,4 @@ my techniques:
 https://github.com/alexcrichton/coz-rs
 
 anti-normative-positivism
+
