@@ -73,9 +73,8 @@ It begins today.
 
 This guide contains basic information for getting started with
 performance-sensitive engineering. I think everyone will learn
-something new. I know I certainly have ;) In fact, a motivation
-for writing this is so I have a place to re-learn some of these
-things again when I forget them over time.
+something new. A motivation for writing this is so I have a place
+to re-learn some of these things again when I forget them over time.
 
 I initially wrote this guide for the Rust ecosystem, where many people are now
 trying their hands at optimization for the first time. But nearly all of this document
@@ -126,7 +125,6 @@ Let's kick this shit up! Here's what it's gonna look like...
 
 ##### CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
 
-* [queue theory](#queue-theory)
 * [amdahl's law](#amdahls-law)
 * [universal scalability law](#universal-scalability-law)
 * parallelism is the opposite of concurrency
@@ -204,19 +202,17 @@ conditions that caused us to form these beliefs change, we tend not to revisit
 the now-invalidated beliefs. Cache invalidation is hard when we are so rarely
 aware of the dependency graphs of what we believe.
 
-All of our beliefs are based on past experiences. The future is not the past.
-
 So, we measure. Even when we're convinced that we're right. Because we are
-always wrong to some extent, and we are fundamentally incapable of altering this
-fact. But we can be responsible in the face of that.
+always out of sync with reality, and we are fundamentally incapable of altering
+this fact. But we can be responsible in the face of that.
 
 Corollary: allow yourself to be wrong. Allowing yourself to be wrong with
 yourself, your collaborators, and in public is a key optimization for learning
 faster and building better things with less effort and in less time.
 
-Luckily for us, machines tend to be quite amenable to measurement. We built
+Luckily for us, machines tend to be somewhat amenable to measurement. We built
 them that way. Indeed, constructing them to be somewhat measurable in the first
-place was the only reason we were able to assemble them at all despite our
+place was the only way we were able to assemble them at all despite our
 innumerable shortcomings. We took the predecessor to your current machine,
 chose some metrics to improve, made a huge number of mistakes while continuing
 to measure, and occasionally we got lucky: the metrics we cared about improved
@@ -233,156 +229,17 @@ make the important metrics worse due to under-investment.
 
 We must select our measurements with care. Our time is precious.
 
-By making decisions while data is available, we are able to cut through so
-much bullshit. We have so many ideas that our experience tells us should
-cause our code to improve, but it simply isn't true when we actually measure.
+By making decisions that are considerate of available data, we are able to cut
+through so much bullshit. We have so many ideas that our experience tells us
+should cause our code to improve, but it simply isn't true when we actually
+measure. Code changes that made your Java, C++, Haskell or JS programs faster
+may not make Rust any faster. Don't make Rust code ugly just because some
+program you wrote in the 90s worked better with [manual loop
+unrolling](https://en.wikipedia.org/wiki/Duff%27s_device). Compilers change,
+in many ways for the better.
 
 Don't be macho. Make decisions while having real data on-hand and limit the
 damage of hubris.
-
-## experimental design
-
-Experimental design is about selecting meaningful workloads and metrics,
-avoiding bias and achieving reproducible results without wasting too much time
-getting shit done.
-
-Different levels of scientific rigor are appropriate for different kinds of
-work. But let's run through a quick list of things that we would like to
-avoid.
-
-1. Sometimes optimizations make code harder to read. If we
-
-Most folks will measure a program
-Measuring the runtime of a workload before and after applying a diff is unsound
-because there are so many other variables that impact performance.
-
-Your machine does some things that might not be obvious, which will change your
-measurements:
-
-* [CPU frequency scaling](#frequency-scaling)
-  * CPUs will burst to high frequencies for short periods of time to make short tasks run quicker
-  * CPUs will cut dramatically lower their frequencies to use less power over time
-  * CPUs will cut dramatically lower their frequencies to generate less heat over time
-  * did better compilation cause your CPU to heat up? your **better** code may run **slower** afterwards
-  * is your laptop running on battery? **better** code may run **slower**
-* is the data you're reading from disk already in the OS pagecache?
-  * your kernel keeps a lot of recently accessed file data in memory to speed up future accesses
-  * the second run of a program that reads data from disk doesn't pay the disk costs. **better** code may run **slower** than slower code with a warmed cache
-  * pagecache can be dropped via `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches` (thanks [@vertexclique](https://twitter.com/vertexclique))
-* is your memory becoming more fragmented?
-  * system-wide memory can be compacted via `echo 1 | sudo tee /proc/sys/vm/compact_memory` (thanks [@knweiss](https://twitter.com/knweiss))
-* [The linking order used to combine otherwise identical compiled code objects when creating a binary](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
-  * can result in 10% more cycles with zero code changes. **better** code may run **slower**
-* [yelling near your computer](https://www.youtube.com/watch?v=tDacjrSCeq4)
-  * having too much fun? **better** code may run **slower**
-* [Are you accessing different memory locations that are 4k apart?](#4k-aliasing)
-
-Modern computer systems can be surprisingly difficult to harvest high-quality
-measurements from. Things that can significantly influence performance:
-
-
-
-If an experiment were a pure math function, changing our input variables would
-be the only thing that would influence the change of our observed outputs.
-Unfortunately, our systems are quite complex, and there are many factors which
-may influence the quality of our measurements.
-
-Experimental design is at the heart of our quest to determine if our code
-changes made our system better according to our chosen metrics.
-
-How do we measure our metrics? We seek to make our programs more efficient by
-changing code.  Running a program twice will result in two different
-measurements. But the difference in performance is NOT necessarily because the
-code is faster for realistic workloads.  [CPU frequency
-scaling](#frequency-scaling) is a major source of variance, for instance.
-
-If you spend more time compiling and applying more optimizations, the program
-may run slower if executed immediately after compilation, because frequency
-scaling has kicked in already.
-
-Maybe your memory is becoming more fragmented over time. Maybe files that are
-being read during your workload are cached the second time around in the
-operating system's pagecache.
-
-Many code changes that run faster in microbenchmarks will run more slowly when
-combined with real business logic, because the microbenchmark causes CPU caches
-to behave differently.
-
-Often, code that runs faster in microbenchmarks causes CPUs to heat up more,
-causing frequency scaling to kick in more, and result in a slower system when
-running for longer periods of time.  Faster code often consumes more heat, as
-well.  Maybe a 3% throughput improvement is not worth a 100% power consumption
-increase.
-
-Experimental design is about trying to extract useful measurements despite
-known and unknown sources of variance.
-
-Only through careful measurement can we increase our confidence that our
-observed measurements correspond to the changes we introduced in code.
-
-Failing to exercise experimental discipline will result in a lot of
-"optimizations" that are assumed to improve the situation but in fact only add
-complexity to the codebase, reducing maintainability, and making it harder to
-properly measure future optimizations.
-
-It's quite easy to justify a performance regression as an improvement when you
-see a workload running faster after changing code. But code changes are far
-from the only things that impact how long it takes to run a program, or how
-fast the code runs.
-
-There are a large number of known and unknown factors that will introduce
-variance into workload measurements.  Even if we run a program twice in a row,
-we will experience variance in our observed latencies and throughputs.
-
-There are lots of ways to make sled faster in a single run of a workload, and
-we need to make sure that when we take measurements, we are not actually
-measuring the effects of things that do not relate to the code that we are
-trying to optimize.
-
-#### Bad:
-
-```
-* time compile and run workload 1
-* time compile and run workload 2
-* compare total times
-```
-
-#### Better:
-
-```
-* compile workload 1
-* compile workload 2
-* cool-down
-* time workload 1
-* time workload 2
-* time workload 1
-* time workload 2
-...
-* time workload 1
-* time workload 2
-* view distribution of results
-```
-
-### experiment checklist
-
-- [ ] I am aware of the amount of overhead that my measurement tools impose
-- [ ] I am ensuring that C- and P-state throttling is accounted for in my measurements
-- [ ]
-- [ ]
-- [ ]
-- [ ]
-- [ ]
-- [ ]
-- [ ]
-- [ ]
-
-Further reading:
-
-* [How Not to Measure Computer System Performance](https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html)
-* [Producing Wrong Data Without Doing Anything Obviously Wrong! - ASPLOS 2009](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
-* [ASPLOS 13 - STABILIZER: Statistically Sound Performance Evaluation - ASPLOS 2013](https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf)
-* The Art of Computer Systems Performance Analysis by Raj Jain
-
 
 ## metrics
 
@@ -476,6 +333,43 @@ devices based on flash memory are essentially distributed databases
 where every 32mb is a different shard, so you can get a lot of throughput
 without immediate negative saturation by keeping the queue depths pretty
 deep, so more of the distributed chips in the device can do work at once.
+
+A critical insight is that if you have a system that you wish to optimize
+for low latency, it is helpful if the subsystems that it depends on are
+also optimized for latency. If you are serving user requests where you
+want to minimize response time, you probably want to avoid having that
+response depend on an analytical database tuned for batch performance
+instead of low latency. If you want to process trillions of records
+in some low amount of time without caring much about the time to process
+a particular record, you probably want to rely on systems that
+have been tuned for throughput at the expense of latency.
+
+All systems have specific latency-throughput trade-offs. When your
+system depends on subsystems in the critical path where different
+latency-throughput trade-offs were made, your overall system will
+behave worse.
+
+Some systems can auto-tune and achieve both great latency and throughput
+while under light load. [Andrea Lattuada](https://twitter.com/utaal) mentioned
+a great example of an auto-tuning system to me: a throughput-oriented system can
+take the entire queue of new requests, process them in a batch,
+and loop like this. This auto-tunes the batch size to be low (reducing
+latency) when there is a small request volume coming in. This yields
+nice low latency requests when the volume of requests is low, but allows
+the system to scale up and take advantage of batch optimizations as the
+request rate increases.
+
+It's important to note, that auto-tuning systems will not achieve both
+great (low) latency and great (high) throughput as the load increases.
+
+An auto-tuning low-latency system must scale the number of servers,
+rather than the batching window. However, as [Amdahl's Law](#amdahls-law)
+and [USL](#universal-law-of-scalability) show, we can only parallelize
+a program by a certain amount, and the very act of parallelization will
+impose additional costs which could negate any possible gains from
+parallelization.
+
+If you are building a system
 
 Further reading:
 
@@ -624,6 +518,151 @@ information when configured to do so](https://twitter.com/sadisticsystems/status
 Having a profiler built-in makes finding bottlenecks
 quite easy, and in a quick glance it's easy to see
 where optimization effort may be well spent.
+
+## experimental design
+
+Experimental design is about selecting meaningful workloads and metrics,
+avoiding bias and achieving reproducible results without wasting too much time
+getting shit done.
+
+Different levels of scientific rigor are appropriate for different kinds of
+work. But let's run through a quick list of things that we would like to
+avoid.
+
+1. Sometimes optimizations make code harder to read. If we
+
+Most folks will measure a program
+Measuring the runtime of a workload before and after applying a diff is unsound
+because there are so many other variables that impact performance.
+
+Your machine does some things that might not be obvious, which will change your
+measurements:
+
+* [CPU frequency scaling](#frequency-scaling)
+  * CPUs will burst to high frequencies for short periods of time to make short tasks run quicker
+  * CPUs will cut dramatically lower their frequencies to use less power over time
+  * CPUs will cut dramatically lower their frequencies to generate less heat over time
+  * did better compilation cause your CPU to heat up? your **better** code may run **slower** afterwards
+  * is your laptop running on battery? **better** code may run **slower**
+* is the data you're reading from disk already in the OS pagecache?
+  * your kernel keeps a lot of recently accessed file data in memory to speed up future accesses
+  * the second run of a program that reads data from disk doesn't pay the disk costs. **better** code may run **slower** than slower code with a warmed cache
+  * pagecache can be dropped via `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches` (thanks [@vertexclique](https://twitter.com/vertexclique))
+* is your memory becoming more fragmented?
+  * system-wide memory can be compacted via `echo 1 | sudo tee /proc/sys/vm/compact_memory` (thanks [@knweiss](https://twitter.com/knweiss))
+* [The linking order used to combine otherwise identical compiled code objects when creating a binary](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
+  * can result in 10% more cycles with zero code changes. **better** code may run **slower**
+* [yelling near your computer](https://www.youtube.com/watch?v=tDacjrSCeq4)
+  * having too much fun? **better** code may run **slower**
+* [Are you accessing different memory locations that are 4k apart?](#4k-aliasing)
+
+Modern computer systems can be surprisingly difficult to harvest high-quality
+measurements from. Things that can significantly influence performance:
+
+
+
+If an experiment were a pure math function, changing our input variables would
+be the only thing that would influence the change of our observed outputs.
+Unfortunately, our systems are quite complex, and there are many factors which
+may influence the quality of our measurements.
+
+Experimental design is at the heart of our quest to determine if our code
+changes made our system better according to our chosen metrics.
+
+How do we measure our metrics? We seek to make our programs more efficient by
+changing code.  Running a program twice will result in two different
+measurements. But the difference in performance is NOT necessarily because the
+code is faster for realistic workloads.  [CPU frequency
+scaling](#frequency-scaling) is a major source of variance, for instance.
+
+If you spend more time compiling and applying more optimizations, the program
+may run slower if executed immediately after compilation, because frequency
+scaling has kicked in already.
+
+Maybe your memory is becoming more fragmented over time. Maybe files that are
+being read during your workload are cached the second time around in the
+operating system's pagecache.
+
+Many code changes that run faster in microbenchmarks will run more slowly when
+combined with real business logic, because the microbenchmark causes CPU caches
+to behave differently.
+
+Often, code that runs faster in microbenchmarks causes CPUs to heat up more,
+causing frequency scaling to kick in more, and result in a slower system when
+running for longer periods of time.  Faster code often consumes more heat, as
+well.  Maybe a 3% throughput improvement is not worth a 100% power consumption
+increase.
+
+Experimental design is about trying to extract useful measurements despite
+known and unknown sources of variance.
+
+Only through careful measurement can we increase our confidence that our
+observed measurements correspond to the changes we introduced in code.
+
+Failing to exercise experimental discipline will result in a lot of
+"optimizations" that are assumed to improve the situation but in fact only add
+complexity to the codebase, reducing maintainability, and making it harder to
+properly measure future optimizations.
+
+It's quite easy to justify a performance regression as an improvement when you
+see a workload running faster after changing code. But code changes are far
+from the only things that impact how long it takes to run a program, or how
+fast the code runs.
+
+There are a large number of known and unknown factors that will introduce
+variance into workload measurements.  Even if we run a program twice in a row,
+we will experience variance in our observed latencies and throughputs.
+
+There are lots of ways to make sled faster in a single run of a workload, and
+we need to make sure that when we take measurements, we are not actually
+measuring the effects of things that do not relate to the code that we are
+trying to optimize.
+
+#### Bad:
+
+```
+* time compile and run workload 1
+* time compile and run workload 2
+* compare total times
+```
+
+#### Better:
+
+```
+* compile workload 1
+* compile workload 2
+* cool-down
+* time workload 1
+* time workload 2
+* time workload 1
+* time workload 2
+...
+* time workload 1
+* time workload 2
+* view distribution of results
+```
+
+### experiment checklist
+
+- [ ] I am aware of the amount of overhead that my measurement tools impose
+- [ ] I am ensuring that C- and P-state throttling is accounted for in my measurements
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+
+Further reading:
+
+* [How Not to Measure Computer System Performance](https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html)
+* [Producing Wrong Data Without Doing Anything Obviously Wrong! - ASPLOS 2009](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
+* [ASPLOS 13 - STABILIZER: Statistically Sound Performance Evaluation - ASPLOS 2013](https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf)
+* The Art of Computer Systems Performance Analysis by Raj Jain
+
+
 
 ## amdahl's law
 
