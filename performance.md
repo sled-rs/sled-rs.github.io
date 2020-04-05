@@ -65,7 +65,7 @@ you experience joy and place orders for more toilet paper.
 
 It begins today.
 
-<img alt="warm sun rising over the water with a boat and mountains in the background" src="https://pixnio.com/free-images/2017/10/17/2017-10-17-06-24-35-1100x462.jpg">
+<img alt="warm sun rising over the water with a boat and mountains in the background" src="http://sled.rs/art/sunrise.jpg">
 
 This guide contains basic information for getting started with
 performance-sensitive engineering. I say "basic" sort of sarcastically.
