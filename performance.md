@@ -42,6 +42,11 @@ Let's put on some nice music.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/GEaEX7AjMKo" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
+
+Take a deep breath.
+
+Let it out.
+
 The year is 2020. and we are utterly fucked.
 
 Supposedly we are here reading this article because we "like computers" or
