@@ -18,18 +18,21 @@ WARNING: Viewer discretion is advised.
   latency-throughput behavior, increasing latency and lowering throughput
 * if something necessary can be done in the background without blocking,
   queue it up for eventual batch processing to improve cache performance
-* find long-lived allocations with DHAT and ensure that they employ the
-  correct time-space trade-offs
+* look at allocation lifetime using DHAT, avoid short-lived allocations
+  and ensure that long-lived allocations employ time-space trade-offs
+  that consume plentiful resources instead of scarce ones where possible
 * seriously, it's always your fault if your engineers quit.
 * performance happens naturally when engineers love the codebase and they
-  are aware of which parts of the system can be sped up significantly
-* why does an executive care about performance, anyway?
+  are aware of which parts of the system can be sped up
 * before wasting time optimizing things that don't matter, we can easily test
   whether optimizing could be useful at all by adding delays or deleting
   relevant code to see what the impact of infinite optimization would be
 * by default your machine will randomly change your cpu frequency, yank
   processes across cores and sockets, and generally make measurements
-  deceptive and non-reproducible. we can control this behavior.
+  deceptive and non-reproducible. we can control this behavior. if you
+  don't account for this behavior, your measurements are not sound justifications
+  for code changes
+* wait, why does an executive care about performance, anyway?
 
 ## non-executive introduction
 
@@ -68,18 +71,21 @@ It begins today.
 <img alt="warm sun rising over the water with a boat and mountains in the background" src="http://sled.rs/art/sunrise.jpg">
 
 This guide contains basic information for getting started with
-performance-sensitive engineering. I say "basic" sort of sarcastically.
-I think everyone will learn something here. I know I certainly have ;)
+performance-sensitive engineering. I think everyone will learn
+something new. I know I certainly have ;) In fact, a motivation
+for writing this is so I have a place to re-learn some of these
+things again when I forget them over time.
 
-The target audience is the Rust ecosystem, where many people are now trying
-their hands at optimization for the first time. But 97% of this
-document applies generally to optimizing programs running on machines, with a
-few of the hardware effects mentioned being specific to x86 circa 2020.
+I initially wrote this guide for the Rust ecosystem, where many people are now
+trying their hands at optimization for the first time. But nearly all of this document
+applies to general programming, with a few of the hardware effects mentioned
+being specific to x86 circa 2020.
 
-This guide brings together ideas from psychology, hardware, queue theory,
-statistics, economics, management, distributed systems, concurrency and systems
-engineering with the goals of helping you to be less of an asshole and write
-code that tends to be fast.
+This guide brings together ideas from systems engineering, systems theory,
+psychology, hardware, queuing theory, statistics, economics, management,
+distributed systems, concurrency and philosophy of science with the goals of
+helping you to be less of an asshole and write code that tends to improve
+the metrics you care about.
 
 Performance is about being thoughtful about the metrics that matter to us and
 allowing ourselves to be aware of them while making decisions.
