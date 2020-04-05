@@ -82,7 +82,7 @@ applies to general programming, with a few of the hardware effects mentioned
 being specific to x86 circa 2020.
 
 This guide brings together ideas from systems engineering, systems theory,
-psychology, hardware, queuing theory, statistics, economics, management,
+psychology, hardware, queuing theory, statistics, economics,
 distributed systems, concurrency and philosophy of science with the goals of
 helping you to be less of an asshole and write code that tends to improve
 the metrics you care about.
@@ -281,7 +281,7 @@ for pretty graphs illustrating this on an
 network system.
 
 In real-world systems, arrivals happen in difficult-to-predict but
-reasonable-to-model distributions that often resemble exponential or Zipfian
+acceptable-to-model distributions that often resemble exponential or Zipfian
 distributions, which means that these rare queue length explosions really do
 happen from time to time, even when nothing is really wrong. They are normal
 and should be planned for by being careful about TCP backlog lengths (usually
@@ -347,29 +347,48 @@ have been tuned for throughput at the expense of latency.
 All systems have specific latency-throughput trade-offs. When your
 system depends on subsystems in the critical path where different
 latency-throughput trade-offs were made, your overall system will
-behave worse.
+behave worse. If you force a latency-bound user-facing response
+to go through a kafka queue before their web browser loads the
+result, you are introducing a throughput-bound dependency
+into the critical path of a latency-bound workload, and the
+result will be a worse experience. We should use low-latency
+dependencies in the critical paths of low-latency workloads. We should use high-throughput
+dependencies in the critical paths of high-throughput workloads. Mixing and
+matching systems in our critical paths without evaluating their queuing
+characteristics is likely to result in terrible performance.
 
-Some systems can auto-tune and achieve both great latency and throughput
-while under light load. [Andrea Lattuada](https://twitter.com/utaal) mentioned
-a great example of an auto-tuning system to me: a throughput-oriented system can
-take the entire queue of new requests, process them in a batch,
-and loop like this. This auto-tunes the batch size to be low (reducing
-latency) when there is a small request volume coming in. This yields
-nice low latency requests when the volume of requests is low, but allows
-the system to scale up and take advantage of batch optimizations as the
-request rate increases.
+The authors of the frameworks you're using probably don't understand these
+basic engineering principles. Measure what's happening and keep your
+queuing behaviors aligned and your system will fly.
 
-It's important to note, that auto-tuning systems will not achieve both
-great (low) latency and great (high) throughput as the load increases.
+Under light load, throughput-bound systems can sometimes scale down to reduce
+buffering and achieve lower latency at lower loads. [Andrea
+Lattuada](https://twitter.com/utaal) mentioned a great example of an
+auto-tuning system to me: a throughput-oriented system can take the entire
+queue of new requests, process them in a batch, and generally keep picking the
+queue length as the batch size where possible. This auto-tunes the batch size
+to be low (reducing latency) when there is a small request volume coming in.
+This yields nice low latency requests when the volume of requests is low, but
+allows the system to scale up and take advantage of batch optimizations as the
+request rate increases. Latency suffers as load increases, because in this
+case, latency is not a high priority.
 
-An auto-tuning low-latency system must scale the number of servers,
-rather than the batching window. However, as [Amdahl's Law](#amdahls-law)
-and [USL](#universal-law-of-scalability) show, we can only parallelize
-a program by a certain amount, and the very act of parallelization will
-impose additional costs which could negate any possible gains from
-parallelization.
+An auto-tuning low-latency system must scale something other than the queue
+length when throughput increases if it is going to keep maintaining low
+latency. Low-latency is dependent on keeping the the amount of time waiting in a
+queue beneath a desired threshold. So, instead of increasing the batch size, we
+must increase the amount of parallelism by using more threads, more servers,
+etc...  However, as [Amdahl's Law](#amdahls-law) and
+[USL](#universal-scalability-law) show, we can only parallelize a program by a
+certain amount, and the very act of parallelization will impose additional
+costs which could negate any possible gains from parallelization.
 
-If you are building a system
+It is important when building a system to be aware of whether your
+goal is to keep requests processing at low-latencies or at
+high-throughputs, because this should have a huge impact on your
+design, your dependencies, your scaling techniques, etc...
+
+Be aware of where your system stands on this spectrum.
 
 Further reading:
 
@@ -381,27 +400,30 @@ Further reading:
 
 ### measuring latency
 
+In the process of satisfying a request of some sort, a system will often rely
+on other systems. A database relies on a kernel to schedule its threads onto
+CPUs and provide access to storage. We can learn about what causes a database
+to be slow by learning about what causes its subcomponents and interactions
+with other systems to be slow.
+
 If you're measuring latency for a large number of requests, there are a number
-of ways that you can derive meaning from the measurements.
+of ways that you can derive meaning from measurements. People often rely on
+averages to make sense of a large number of measurements. But the average is
+not very interesting for our highly discrete computer systems because it hides
+the impact of outliers and gives us no insight into the distribution of data.
+Things like normal curves and t-tests do not apply for data which do not follow
+normal distributions. Determining what our distribution looks like at all is
+part of our work.
 
-The one that many people reach for immediately is average. But the average is
-not very interesting for computer systems because it hides the impact of
-outliers.
-
-Some people claim that the geometric mean instead of the arithmetic mean is a
-better choice for some metrics, but for reasoning about highly discrete systems
-(nearly everything in the world of systems) it's still a pretty low-quality
-metric.  Our systems do not fit nicely with normal distributions and any sort
-of average tells us very little about what the distribution of latencies looks
-like.
-
-Instead, we usually use histograms so that we can understand the distribution
-of our data.  The 50th percentile is the median. The 90th percentile is the
-latency that 90% of all measured latencies are beneath. It's pretty cheap to
-measure histograms by using logarithmic bucketing to index into an array of
-buckets that are sized to be within 1% of the true observed values. The
-[historian](http://docs.rs/historian) crate was extracted from sled to assist
-with these measurements in a super cheap manner.
+We usually use histograms so that we can understand the distribution of our
+data. The 0th percentile is the minimum measurement. The 100th percentile is
+the maximum measurement. The 50th percentile is the median, where half of all
+measurements are beneath and half of all measurements are above. The 90th
+percentile is the latency that 90% of all measured latencies are less than or
+equal to. It's pretty cheap to measure histograms by using logarithmic
+bucketing to index into an array of buckets that are sized to be within 1% of
+the true observed values. The [historian](http://docs.rs/historian) crate was
+extracted from sled to assist with these measurements in a super cheap manner.
 
 Imagine this scenario:
 
@@ -418,7 +440,9 @@ The probability of needing to wait 1 second for a single request is 1% (99th
 percentile is 1s). The probability of needing to wait 1 second for 2 requests is
 1.9% (`1 - (0.99 ^ 2)`). Intuition: if we sent 1,000,000 requests, the
 percentage would not become 1,000,000 * 1%, or 10,000%, because 100% is the max
-probability an event can have.
+probability an event can have. For this example, everything between the 99th
+and 100th percentiles is exactly 1 second. All of our slowest 1% of requests
+take 1 second.
 
 The probability of needing to wait 1 second for 100 requests is `1 - (0.99 ^
 100)`, or 63%. Even though the event only happens 1% of the time, our front-end
@@ -451,7 +475,7 @@ codebase](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr
 Putting energy into reducing the complexity of your code will often make it:
 
 * easier for humans to read (hence faster for them to optimize over time)
-* easier for compilers to optimize
+* easier for compilers to optimize due to being smaller
 * faster to compile at all, resulting in a more responsive edit-measure
   loop, resulting in more optimizations per human time unit spent
 * have less machine code, improving instruction cache at runtime
@@ -473,61 +497,54 @@ Let's strive to be clear about our metrics, at the very least.
 
 ### sled case study
 
-Here are some other metrics that are interesting
-for sled:
+Here are some other metrics that are interesting for sled:
 
-* Single operation worst case latency: this
-  is our primary metric because we are prioritizing transactional workloads
-  above analytical workloads. We want users to have reliably responsive access
-  to their data. We pay particular attention to the very worst case latency
-  because it is fairly important from an operational perspective.
-* Peak memory utilization: we want a high
-  fraction of all allocated memory to be made up of user data that is likely to
-  be accessed. This lets us keep our cache hit rates higher given the available
-  memory, reducing the latency of more operations.
-* Recovery latency. How long does it take
-  to start the database after crashing?
-* Peak memory throughput: we want to avoid
-  short-lived allocations that may be more efficiently stored on the stack. This
-  also allows us to have more predictable latency as our memory usage grows,
-  because most allocators start to degrade in various ways as they are pushed
-  harder.
-* Bulk-loading throughput: we want users to
-  be able to insert large amounts of data into sled quickly so they can start
-  using it.
-* Peak disk space utilization: we don't want
-  sled to use 10x the space that user data requires. It's normal for databases
-  to use 1-2x the actual data size because of various defragmenting efforts, but
-  we reduce the number of deployment possibilities when this "space
-  amplification" is high.
-* Peak disk throughput: there is a trade-off
-  between new data that can be written and the amount of disk throughput we
-  spend rewriting old data to defragment the storage file and use less total
-  space. If we are careful about minimizing the amount of data that we write at
-  all, we can increase our range of choice between smaller files and higher
-  write throughput.
-* Disk durability: the more we write data at all,
-  the sooner our drives will die. We should avoid moving data around too much. A
-  huge amount of the work of building a high quality storage engine boils down
-  to treating the disk kindly, often at the expense of write throughput.
+* Single operation worst case latency: this is our primary metric because we
+  are prioritizing transactional workloads above analytical workloads. We want
+  users to have reliably responsive access to their data. We pay particular
+  attention to the very worst case latency because it is fairly important from
+  an operational perspective. We sometimes choose to sacrifice better average
+  latency in order to improve the latency at high percentiles, to increase
+  the overall dependability of the system.
+* Peak memory utilization: we want a high fraction of all allocated memory to
+  be made up of user data that is likely to be accessed. This lets us keep our
+  cache hit rates higher given the available memory, reducing the latency of
+  more operations.
+* Recovery latency. How long does it take to start the database after crashing?
+* Peak memory throughput: we want to avoid short-lived allocations that may be
+  more efficiently stored on the stack. This also allows us to have more
+  predictable latency as our memory usage grows, because most allocators start
+  to degrade in various ways as they are pushed harder.
+* Bulk-loading throughput: we want users to be able to quickly insert large
+  amounts of data into sled quickly so they can start using it.
+* Peak disk space utilization: we don't want sled to use 10x the space that
+  user data requires. It's normal for databases to use 1-2x the actual data
+  size because of various defragmenting efforts, but we reduce the number of
+  deployment possibilities when this "space amplification" is high.
+* Peak disk throughput: there is a trade-off between new data that can be
+  written and the amount of disk throughput we spend rewriting old data to
+  defragment the storage file and use less total space. If we are careful
+  about minimizing the amount of data that we write at all, we can increase
+  our range of choice between smaller files and higher write throughput.
+* Disk durability: the more we write data at all, the sooner our drives will
+  die. We should avoid moving data around too much. A huge amount of the work
+  of building a high quality storage engine boils down to treating the disk
+  kindly, often at the expense of write throughput.
 
-In sled, we measure histograms using code that was
-extracted into the [historian](https://docs.rs/historian)
-crate. We also output [a table of performance-related
-information when configured to do so](https://twitter.com/sadisticsystems/status/1229302336637558785).
-Having a profiler built-in makes finding bottlenecks
-quite easy, and in a quick glance it's easy to see
-where optimization effort may be well spent.
+In sled, we measure histograms using code that was extracted into the
+[historian](https://docs.rs/historian) crate. We also output [a table of
+performance-related information when configured to do
+so](https://twitter.com/sadisticsystems/status/1229302336637558785). Having a
+profiler built-in makes finding bottlenecks quite easy, and in a quick glance
+it's easy to see where optimization effort may be well spent.
 
 ## experimental design
 
 Experimental design is about selecting meaningful workloads and metrics,
-avoiding bias and achieving reproducible results without wasting too much time
-getting shit done.
+avoiding bias and achieving reproducible results without wasting too much time.
 
 Different levels of scientific rigor are appropriate for different kinds of
-work. But let's run through a quick list of things that we would like to
-avoid.
+work.
 
 1. Sometimes optimizations make code harder to read. If we
 
@@ -558,8 +575,6 @@ measurements:
 
 Modern computer systems can be surprisingly difficult to harvest high-quality
 measurements from. Things that can significantly influence performance:
-
-
 
 If an experiment were a pure math function, changing our input variables would
 be the only thing that would influence the change of our observed outputs.
@@ -644,9 +659,59 @@ trying to optimize.
 
 ### experiment checklist
 
+Checklists from Raj Jain's The Art of Computer Systems Performance Analysis:
+
+Box 2.1 Checklist for Avoiding Common Mistakes in Performance Evaluation
+
+1. Is the system correctly defined and the goals clearly stated?
+2. Are the goals stated in an unbiased manner?
+3. Have all the steps of the analysis followed systematically?
+4. Is the problem clearly understood before analyzing it?
+5. Are the performance metrics relevant for this problem?
+6. Is the workload correct for this problem?
+7. Is the evaluation technique appropriate?
+8. Is the list of parameters that affect performance complete?
+9. Have all parameters that affect performance been chosen as factors to be varied?
+10. Is the experimental design efficient in terms of time and results?
+11. Is the level of detail proper?
+12. Is the measured data presented with analysis and interpretation?
+13. Is the analysis statistically correct?
+14. Has the sensitivity analysis been done?
+15. Would errors in the input cause an insignificant change in the results?
+16. Have the outliers in the input or output been treated properly?
+17. Have the future changes in the system and workload been modeled?
+18. Has the variance of input been taken into account?
+19. Has the variance of the results been analyzed?
+20. Is the analysis easy to explain?
+21. Is the presentation style suitable for its audience?
+22. Have the results been presented graphically as much as possible?
+23. Are the assumptions and limitations of the analysis clearly documented?
+
+Box 2.2 Steps for a Performance Evaluation Study
+
+1. State the goals of the study and define system boundaries.
+2. List system services and possible outcomes.
+3. Select performance metrics.
+4. List system and workload parameters.
+5. Select factors and their values.
+6. Select evaluation techniques.
+7. Select the workload.
+8. Design the experiments.
+9. Analyze and interpret the data.
+10. Present the results. Start over, if necessary.
+
+#### metric quality checklist
+
+#### STAMP checklist
+
+####
+- [ ] I have disabled power throttling
 - [ ] I am aware of the amount of overhead that my measurement tools impose
-- [ ] I am ensuring that C- and P-state throttling is accounted for in my measurements
-- [ ]
+- [ ] pin threads to cpus
+- [ ] pin memory to sockets
+- [ ] hyperthreading is disabled
+- [ ] power management features disabled
+- [ ] double check the socket that owns important memory using libnuma etc...
 - [ ]
 - [ ]
 - [ ]
@@ -661,8 +726,6 @@ Further reading:
 * [Producing Wrong Data Without Doing Anything Obviously Wrong! - ASPLOS 2009](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
 * [ASPLOS 13 - STABILIZER: Statistically Sound Performance Evaluation - ASPLOS 2013](https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf)
 * The Art of Computer Systems Performance Analysis by Raj Jain
-
-
 
 ## amdahl's law
 
@@ -699,6 +762,12 @@ The high-level summary is that
 
 * Contention - time spent queuing to access shared resources
 * Coherency - the cost of combining the parallelized work
+
+[Frank McSherry
+showed](http://www.frankmcsherry.org/graph/scalability/cost/2015/02/04/COST2.html)
+that a single laptop running a properly tuned single-threaded implementation
+can outperform the throughput of an expensive cluster for several graph
+processing algorithms.
 
 Further reading:
 
@@ -852,7 +921,8 @@ https://timharris.uk/misc/five-ways.pdf
     * timing or throughput info
     * resource usage: instructions, memory use, last-level cache misses, etc...
     * actual code changes
-  * before making something faster, duplicate the operation you want to chop out, see if it makes measurements different
+  * before making something faster, duplicate the operation you want to optimize, see if it makes measurements different
+  * know what your system limits are, be aware of what the code is doing, and make sure you trade-off away from scarce resources where possible
 
 https://randomascii.wordpress.com/2018/02/04/what-we-talk-about-when-we-talk-about-performance/
   * "90% faster" and "90% speed-up" etc... can easily be misinterpreted
@@ -883,3 +953,5 @@ my techniques:
 
 [COZ:  Finding  Code  that  Counts  with  Causal  Profiling](https://arxiv.org/pdf/1608.03676v1.pdf)
 * inserts delays, causing potential relative speedups to be illuminated
+
+https://github.com/alexcrichton/coz-rs
