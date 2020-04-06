@@ -107,8 +107,8 @@ and others.
 ## shameless, emotionally annihiliating begging
 
 My workshops have been the primary means of supporting sled development costs.
-Unfortunately, they are now on hold due to coronavirus concerns. If you feel
-like this information is useful, please consider [supporting my
+Unfortunately, the workshops are now on hold due to coronavirus concerns. If
+you feel like this information is useful, please consider [supporting my
 efforts](https://github.com/sponsors/spacejam) to share knowledge and
 productionize cutting edge database research with implementations in Rust :)
 
@@ -175,7 +175,6 @@ Let's kick this shit up! Here's what it's gonna look like...
   * flat-combining
 * ##### CHAPTER 0b101: Rust specifics
   * [async tasks](#async-tasks)
-  * threads
 
 # IT BEGINS
 
@@ -542,13 +541,7 @@ it's easy to see where optimization effort may be well spent.
 Experimental design is about selecting meaningful workloads and metrics,
 avoiding bias and achieving reproducible results without wasting too much time.
 
-Different levels of scientific rigor are appropriate for different kinds of
-work.
-
-1. Sometimes optimizations make code harder to read. If we
-
-Most folks will measure a program
-Measuring the runtime of a workload before and after applying a diff is unsound
+Simply measuring the runtime of a workload before and after applying a diff is unsound
 because there are so many other variables that impact performance.
 
 Your machine does some things that might not be obvious, which will change your
@@ -725,6 +718,9 @@ Further reading:
 * [Producing Wrong Data Without Doing Anything Obviously Wrong! - ASPLOS 2009](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
 * [ASPLOS 13 - STABILIZER: Statistically Sound Performance Evaluation - ASPLOS 2013](https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf)
 * The Art of Computer Systems Performance Analysis by Raj Jain
+* A Guide to Experimental Algorithmics by Catherine C McGeoch
+
+# CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
 
 ## amdahl's law
 
@@ -752,23 +748,33 @@ There are sometimes parts of our programs that can be parallelized, while others
 must be executed in a serial fashion. It shows that throwing more resources at a
 workload will not usually cause that workload to complete in a fraction of time
 
-# CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
+The main takeaway:
+
+* only part of a program can be sped up through parallelization
 
 ## universal scalability law
 
 The USL is an excellent way to reason about the potential gains (or negative
-impacts) of parallelism. It goes farther than
+impacts) of parallelism. It goes farther than Amdahl's law because it starts to
+be able to describe how concurrency can start to introduce significant negative
+costs.
 
-The high-level summary is that
+There are 3 bits:
 
-* Contention - time spent queuing to access shared resources
-* Coherency - the cost of combining the parallelized work
+* parallelism - ideal parallelism is basically using all of the hardware you have without paying any costs to put the work back together in a single place or contention for mutexes etc...
+* contention - when a shared resource causes queuing to happen because things must line up to access a resource
+* coherency - the cost of putting parallel work back together, blocking in a concurrent task, etc...
 
 [Frank McSherry
 showed](http://www.frankmcsherry.org/graph/scalability/cost/2015/02/04/COST2.html)
 that a single laptop running a properly tuned single-threaded implementation
 can outperform the throughput of an expensive cluster for several graph
-processing algorithms.
+processing algorithms by completely avoiding the massive contention and
+coherency costs that such distributed systems must pay.
+
+The main takeaway:
+
+* concurrency can reduce possible gains of parallelism by introducing coherency costs
 
 Further reading:
 
@@ -887,7 +893,7 @@ http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.htm
 http://www.brendangregg.com/offcpuanalysis.html
 https://towardsdatascience.com/an-overview-of-monte-carlo-methods-675384eb1694
 
-## rust
+# CHAPTER 0b101: Rust specifics
 
 Rust's borrowing rules ensure that there will only exist a single mutable
 reference to some memory at a time.
@@ -919,7 +925,7 @@ heck are you looking at?
 
 https://assets.azul.com/files/Cliff_Click_Art_of_Java_Benchmarking.pdf
 
-https://timharris.uk/misc/five-ways.pdf
+[Five ways not to fool yourself](https://timharris.uk/misc/five-ways.pdf)
   * test algorithms while being smallest possible as well as clearly overflowing caches
   * be aware of runaway unfairness issues in concurrent code due to caching etc...
   * ideally, keep your correctness assertions on everywhere, even under perf analysis. don't measure broken code.
@@ -941,7 +947,8 @@ https://timharris.uk/misc/five-ways.pdf
   * after we tune, start putting the system back to the production state without pinning, power management, etc...
 
 - criticism
-  *
+  * a lot of time may be spent setting up an unrealistic environment
+    frequency scaling needs to be accounted for because it can
 
 https://randomascii.wordpress.com/2018/02/04/what-we-talk-about-when-we-talk-about-performance/
   * "90% faster" and "90% speed-up" etc... can easily be misinterpreted
@@ -976,4 +983,10 @@ my techniques:
 https://github.com/alexcrichton/coz-rs
 
 anti-normative-positivism
+  positivistLc tendencies due to engineering education - 2003
+
+The Art of Multiprocessor Programming by Maurice Herlihy and Nir Shavit
+
+[A Scalable Lockfree Stack Algorithm](https://www.cs.bgu.ac.il/%7Ehendlerd/papers/p206-hendler.pdf)
+* elimination stack
 
