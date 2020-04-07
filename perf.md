@@ -77,14 +77,18 @@ It begins today.
 
 
 This guide contains basic information for getting started with
-performance-sensitive engineering. I think everyone will learn
-something new. A motivation for writing this is so I have a place
-to re-learn some of these things again when I forget them over time.
+performance-sensitive engineering. This guide also contains low-level
+information that will help you to better understand your partners. I think most
+folks will learn something new. I know I have. And, part of why I wrote this is
+to have a single place with a memorable URL where I can return to when I forget
+most of this stuff. Most importantly, when I unfurl fiery screeds in random
+internet comments I want to have an intimidating reference to which I
+mercilesly link.
 
 I initially wrote this guide for the Rust ecosystem, where many people are now
 trying their hands at optimization for the first time. But nearly all of this document
 applies to general programming, with a few of the hardware effects mentioned
-being specific to x86 circa 2020.
+being specific to x86 and linux circa 2020.
 
 This guide brings together ideas from systems engineering, systems theory,
 psychology, hardware, queuing theory, statistics, economics,
@@ -132,7 +136,6 @@ Let's kick this shit up! Here's what it's gonna look like...
   * [trade-offs](#trade-offs)
     * time vs space
     * memory pressure vs contention
-    * latency vs throughput
     * parallelism vs concurrency
     * the RUM conjecture
 * ##### CHAPTER 0b0010: THE MACHINE
@@ -160,20 +163,23 @@ Let's kick this shit up! Here's what it's gonna look like...
   * [threads](#threads)
   * [syscalls](#syscalls)
   * [flash storage](#flash-storage)
-* ##### CHAPTER 0b011: FIND BAD
-  * [flamegraphs](#flamegraphs)
-  * [cachegrind](#cachegrind)
-  * [massif](#massif)
-  * [dhat](#dhat)
-  * [top-down analysis](#top-down-analysis)
-  * llvm-mca
-  * coz
-* ##### CHAPTER 00000100: MAKE GOOD
+* ##### CHAPTER 0b011: ANAL TOOLZ
+  * [visualizing time with flamegraphs](#flamegraphs)
+  * [modeling CPU behavior with llvm-mca](#llvm-mca)
+  * [determining viable optimizations with coz](#coz)
+  * [allocation lifetime analysis with dhat](#dhat)
+  * [heap profiling with massif](#massif)
+  * [top-down analysis with toplev](#top-down-analysis)
+  * [CPU cache simulation with cachegrind](#cachegrind)
+* ##### CHAPTER 0b100: TECHNIQUE
+  * data structure design
+  * critical path analysis
   * concurrency
   * parallelism
   * batching
   * flat-combining
-* ##### CHAPTER 0b101: Rust specifics
+* ##### CHAPTER 0b101: RUST
+  * allocation analysis with the `GlobalAlloc` trait
   * [async tasks](#async-tasks)
 
 # IT BEGINS
@@ -241,7 +247,7 @@ damage of hubris.
 
 ## metrics
 
-Performance metrics come in many shapes and sizes.  Workloads will have a few
+Performance metrics come in many shapes and sizes. Workloads will have a few
 metrics that matter far more than others.
 
 It's at this point that I'm obligated to bash
@@ -250,27 +256,39 @@ but honestly it's often an important tool for projects to see success - you
 just need to be clear about what your metrics actually are. Don't trick people.
 Give people the means to reproduce your findings. All that good science shit.
 
-Most systems performance metrics boil down to these two:
+Most systems performance metrics boil down to these:
 
 * latency - the time that an operation takes
 * throughput - how many operations can be performed in some unit of time
+* space - whoah.
 
-At higher scales, both of these metrics become
-factors in major concerns like:
+At higher scales, these metrics become factors in major concerns like:
 
 * total cost of ownership
   * how many servers do I need to pay for to get my shit done?
   * how many hours do engineers spend taking care of this shit?
   * how much power does this shit draw?
 
+Quick aside - as of 2020, cloud providers tend to under-charge for compute
+(ec2, lambda, etc...) in an effort to increase your reliance on their more
+expensive storage products. A concept of "data gravity" exists where your
+compute must stay where the storage is. You can't move your compute to a
+different cloud provider if your data is stuck in the old one. And egress
+traffic is taxed heavily to make it more painful to get out. And where your
+compute exists, more data is likely to be produced, increasing the
+gravitational field. Make sure your back-of-the-napkin calculations for
+running infrastructure somewhere take account of the storage costs primarily.
+Engineers love using the fancy hosted databases like Spanner, but the
+cost per byte stored is astronomical. BE AWARE.
+
 In trying to determine how many servers do I need to pay for to get my shit
-done, we need to consider both latency and throughput.
+done, we need to consider latency, throughput and required space (memory and storage).
 
 If we have 1000 requests arriving per second at an exponential distribution (as
 opposed to one arriving each millisecond on the dot), our system actually needs
 to process requests faster than one each millisecond. Queue theory tells us
 that as our arrival rate approaches our processing rate, our queue depth
-approaches infinity.  Nobody's got that kind of time to lay around in line to
+approaches infinity. Nobody's got that kind of time to lay around in line to
 be served. Queue theory provides a number of key intuitions for reasoning about
 the relationship between latency and throughput. See [this
 site](https://witestlab.poly.edu/blog/average-queue-length-of-an-m-m-1-queue/)
@@ -280,11 +298,11 @@ network system.
 
 In real-world systems, arrivals happen in difficult-to-predict but
 acceptable-to-model distributions that often resemble exponential or Zipfian
-distributions, which means that these rare queue length explosions really do
-happen from time to time, even when nothing is really wrong. They are normal
-and should be planned for by being careful about TCP backlog lengths (usually
-set to be too large), timeout durations (usually set to be too long), retry
-strategies (*truncated* exponential backoffs), circuit-breaker patterns, etc...
+distributions. These queue length explosions really do happen, even when
+nothing is really wrong. They are normal and should be planned for by being
+careful about TCP backlog lengths (usually set to be too large), timeout
+durations (usually set to be too long), retry strategies (*truncated*
+exponential backoffs), circuit-breaker patterns, etc...
 
 Some other important general-purpose metrics are:
 
@@ -300,10 +318,10 @@ increase the chance that when a server is finished processing one request that
 it already has another one lined up and ready to go. 100% utilization means
 that the server is always doing useful work. If there is not work already
 waiting to be served when the previous item completes, the utilization drops,
-along with the throughput.  Having things waiting to go in a queue is a common
+along with the throughput. Having things waiting to go in a queue is a common
 way to increase throughput.
 
-But waiting (saturation) is bad for latency.  All other things being equal,
+But waiting (saturation) is bad for latency. All other things being equal,
 sending more requests to a system will cause latency to suffer because the
 chance that a request will have to wait in line before being served will
 increase as well. If we want to minimize the latency of a server, we want to
@@ -376,7 +394,7 @@ length when throughput increases if it is going to keep maintaining low
 latency. Low-latency is dependent on keeping the the amount of time waiting in a
 queue beneath a desired threshold. So, instead of increasing the batch size, we
 must increase the amount of parallelism by using more threads, more servers,
-etc...  However, as [Amdahl's Law](#amdahls-law) and
+etc... However, as [Amdahl's Law](#amdahls-law) and
 [USL](#universal-scalability-law) show, we can only parallelize a program by a
 certain amount, and the very act of parallelization will impose additional
 costs which could negate any possible gains from parallelization.
@@ -553,6 +571,12 @@ measurements:
   * CPUs will cut dramatically lower their frequencies to generate less heat over time
   * did better compilation cause your CPU to heat up? your **better** code may run **slower** afterwards
   * is your laptop running on battery? **better** code may run **slower**
+  * p-state scaling may be disabled if using the intel_pstate driver by setting the
+    linux kernel boot command argument `intel_pstate=no_hwp`
+  * turbo boost can be disabled by setting
+    `echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo` if
+    running with intel_pstate or `echo 0 | sudo tee
+    /sys/devices/system/cpu/cpufreq/boost` if using acpi
 * is the data you're reading from disk already in the OS pagecache?
   * your kernel keeps a lot of recently accessed file data in memory to speed up future accesses
   * the second run of a program that reads data from disk doesn't pay the disk costs. **better** code may run **slower** than slower code with a warmed cache
@@ -564,9 +588,11 @@ measurements:
 * [yelling near your computer](https://www.youtube.com/watch?v=tDacjrSCeq4)
   * having too much fun? **better** code may run **slower**
 * [Are you accessing different memory locations that are 4k apart?](#4k-aliasing)
-
-Modern computer systems can be surprisingly difficult to harvest high-quality
-measurements from. Things that can significantly influence performance:
+* If the kernel pulls your thread to a different socket than the one that
+  initially allocated a bunch of memory, the latency to keep accessing that
+  memory will explode.
+  * threads can be pinned to specific cores on specfic sockets to avoid
+    being migrated to another socket.
 
 If an experiment were a pure math function, changing our input variables would
 be the only thing that would influence the change of our observed outputs.
@@ -577,55 +603,36 @@ Experimental design is at the heart of our quest to determine if our code
 changes made our system better according to our chosen metrics.
 
 How do we measure our metrics? We seek to make our programs more efficient by
-changing code.  Running a program twice will result in two different
+changing code. Running a program twice will result in two different
 measurements. But the difference in performance is NOT necessarily because the
-code is faster for realistic workloads.  [CPU frequency
-scaling](#frequency-scaling) is a major source of variance, for instance.
-
-If you spend more time compiling and applying more optimizations, the program
-may run slower if executed immediately after compilation, because frequency
-scaling has kicked in already.
-
-Maybe your memory is becoming more fragmented over time. Maybe files that are
-being read during your workload are cached the second time around in the
-operating system's pagecache.
+code is faster for realistic workloads.
 
 Many code changes that run faster in microbenchmarks will run more slowly when
-combined with real business logic, because the microbenchmark causes CPU caches
-to behave differently.
+combined with real business logic, because the microbenchmark is able to use
+a lot more CPU cache than it would be able to when running with a real
+workload.
 
-Often, code that runs faster in microbenchmarks causes CPUs to heat up more,
-causing frequency scaling to kick in more, and result in a slower system when
-running for longer periods of time.  Faster code often consumes more heat, as
-well.  Maybe a 3% throughput improvement is not worth a 100% power consumption
-increase.
+You can think of this as being similar to the "multi-tenancy" performance
+issues that we struggle to deal with in distributed systems engineering. The
+same applies even more to single-threaded code which radically changes due to
+the amount of cache it has access to.
 
-Experimental design is about trying to extract useful measurements despite
-known and unknown sources of variance.
-
-Only through careful measurement can we increase our confidence that our
-observed measurements correspond to the changes we introduced in code.
+Very often, faster code is only faster for a few moments before it causes
+frequency scaling to kick in aggressively due to heat generation. There have
+been some infamous cases where using SIMD causes CPUs to heat up more, causing
+frequency scaling to kick in more, and result in a slower system when running
+for longer periods of time. Even without frequency scaling kicking in, faster
+code often consumes more heat, as well. Maybe a 3% throughput improvement is
+not worth a 100% power consumption increase.
 
 Failing to exercise experimental discipline will result in a lot of
 "optimizations" that are assumed to improve the situation but in fact only add
 complexity to the codebase, reducing maintainability, and making it harder to
 properly measure future optimizations.
 
-It's quite easy to justify a performance regression as an improvement when you
-see a workload running faster after changing code. But code changes are far
-from the only things that impact how long it takes to run a program, or how
-fast the code runs.
+One of the most basic techniques: don't just run a workload once:
 
-There are a large number of known and unknown factors that will introduce
-variance into workload measurements.  Even if we run a program twice in a row,
-we will experience variance in our observed latencies and throughputs.
-
-There are lots of ways to make sled faster in a single run of a workload, and
-we need to make sure that when we take measurements, we are not actually
-measuring the effects of things that do not relate to the code that we are
-trying to optimize.
-
-#### Bad:
+Bad:
 
 ```
 * time compile and run workload 1
@@ -633,12 +640,12 @@ trying to optimize.
 * compare total times
 ```
 
-#### Better:
+Better:
 
 ```
+* disable frequency scaling and turbo boost
 * compile workload 1
 * compile workload 2
-* cool-down
 * time workload 1
 * time workload 2
 * time workload 1
@@ -692,33 +699,13 @@ Box 2.2 Steps for a Performance Evaluation Study
 9. Analyze and interpret the data.
 10. Present the results. Start over, if necessary.
 
-#### metric quality checklist
-
-#### STAMP checklist
-
-####
-- [ ] I have disabled power throttling
-- [ ] I am aware of the amount of overhead that my measurement tools impose
-- [ ] pin threads to cpus
-- [ ] pin memory to sockets
-- [ ] hyperthreading is disabled
-- [ ] power management features disabled
-- [ ] double check the socket that owns important memory using libnuma etc...
-- [ ]
-- [ ]
-- [ ]
-- [ ]
-- [ ]
-- [ ]
-- [ ]
-
 Further reading:
 
+* The Art of Computer Systems Performance Analysis by Raj Jain
+* A Guide to Experimental Algorithmics by Catherine C McGeoch
 * [How Not to Measure Computer System Performance](https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html)
 * [Producing Wrong Data Without Doing Anything Obviously Wrong! - ASPLOS 2009](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
 * [ASPLOS 13 - STABILIZER: Statistically Sound Performance Evaluation - ASPLOS 2013](https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf)
-* The Art of Computer Systems Performance Analysis by Raj Jain
-* A Guide to Experimental Algorithmics by Catherine C McGeoch
 
 # CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
 
@@ -757,13 +744,23 @@ The main takeaway:
 The USL is an excellent way to reason about the potential gains (or negative
 impacts) of parallelism. It goes farther than Amdahl's law because it starts to
 be able to describe how concurrency can start to introduce significant negative
-costs.
+costs due to the work that must be done by virtue of making a workload concurrent
+at all.
 
-There are 3 bits:
+The USL describes two costs associated with adding more concurrency to a workload:
 
-* parallelism - ideal parallelism is basically using all of the hardware you have without paying any costs to put the work back together in a single place or contention for mutexes etc...
-* contention - when a shared resource causes queuing to happen because things must line up to access a resource
-* coherency - the cost of putting parallel work back together, blocking in a concurrent task, etc...
+* contention - the amount that more waiting will happen for shared
+  resources as concurrency increases.
+* coherency - the amount that costs must be paid to reassemble or
+  block on other work as the amount of concurrency increases in the system
+
+![graphs showing how contention flattens the scalability curve and incoherency pulls it down](art/usl.png)
+
+
+The USL shows that concurrency can reduce possible gains of parallelism by
+introducing contention and coherency costs. Contention is effectively the
+part of the program that Amdahl's law describes as being non-parallelizable.
+Coherency is
 
 [Frank McSherry
 showed](http://www.frankmcsherry.org/graph/scalability/cost/2015/02/04/COST2.html)
@@ -772,10 +769,6 @@ can outperform the throughput of an expensive cluster for several graph
 processing algorithms by completely avoiding the massive contention and
 coherency costs that such distributed systems must pay.
 
-The main takeaway:
-
-* concurrency can reduce possible gains of parallelism by introducing coherency costs
-
 Further reading:
 
 * http://www.perfdynamics.com/Manifesto/USLscalability.html
@@ -783,8 +776,30 @@ Further reading:
 ## trade-offs
 
 ### time vs space
+
+We already discussed some important relationships between latency, throughput,
+utilization and saturation in the [metrics](#metrics) section above, but we may
+also trade each of those off for space in many cases.
+
 ### memory pressure vs contention
-### latency vs throughput
+
+Contention can be caused when multiple threads are trying to access a shared
+resource, such as some state that is protected by a mutex or a reader-writer
+lock. In many cases, it's possible to reduce contention by spending more
+memory.
+
+For example, we can remove the requirement to have readers take out locks
+at all by having any thread that acquires the mutex first make a local
+copy, perform its desired changes on the local copy, and then when finished
+swap an atomic pointer that readers may follow without ever acquiring a lock
+first. In this case, we are forcing the shared mutable state to exist behind
+a pointer, and re will do a new allocation each time we want to modify the
+data.
+
+[Elimination back-of stack](https://max-inden.de/blog/2020-03-28-elimination-backoff-stack)
+[A Scalable Lockfree Stack Algorithm](https://www.cs.bgu.ac.il/%7Ehendlerd/papers/p206-hendler.pdf)
+* elimination stack
+
 ### parallelism vs concurrency
 
 CppCon 2019: Eric Niebler, David Hollman “A Unifying Abstraction for Async in C++”
@@ -987,6 +1002,17 @@ anti-normative-positivism
 
 The Art of Multiprocessor Programming by Maurice Herlihy and Nir Shavit
 
-[A Scalable Lockfree Stack Algorithm](https://www.cs.bgu.ac.il/%7Ehendlerd/papers/p206-hendler.pdf)
-* elimination stack
 
+[The Periodic Table of Data Structures](https://stratos.seas.harvard.edu/files/stratos/files/periodictabledatastructures.pdf)
+* 3-way trade-off between read-optimized, write-optimized, and space-optimized
+
+https://doc.rust-lang.org/stable/std/alloc/trait.GlobalAlloc.html
+
+[Thread State Analysis](http://www.brendangregg.com/tsamethod.html)
+show how much time each interesting thread is spent doing:
+  * executing on the CPU
+  * runnable but waiting to get a turn
+  * anonymous paging: could run but desired memory is not resident yet
+  * sleeping: waiting for I/O or data/text page-ins
+  * lock: waiting to acquire a lock
+  * idle: waiting for work
