@@ -739,6 +739,16 @@ possible alternative explanations for the high-level change and
 determining whether they may be the true explanation for the observed
 changes.
 
+In addition to collecting runtime metrics while running our code
+in a more-or-less production configuration, we can also use tools
+like [llvm-mca](#llvm-mca) and [cachegrind](#cachegrind) to
+estimate expected instruction and cache performance of our
+programs, and [DHAT](#dhat) and [massif](#massif) to analyze
+our heaps. These tools do not run your program in a production
+configuration, but they still yield interesting metrics that may
+be used to increase confidence in an effort to influence a
+high-level metric.
+
 ### experiment checklist
 
 Here are two nice checklists from Raj Jain's The Art of Computer Systems Performance Analysis:
