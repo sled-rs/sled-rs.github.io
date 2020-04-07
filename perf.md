@@ -608,7 +608,7 @@ measurements. But the difference in performance is NOT necessarily because the
 code is faster for realistic workloads.
 
 Many code changes that run faster in microbenchmarks will run more slowly when
-combined with real business logic, because the microbenchmark is able to use
+combined with real program logic because the microbenchmark is able to use
 a lot more CPU cache than it would be able to when running with a real
 workload.
 
@@ -640,10 +640,24 @@ Bad:
 * compare total times
 ```
 
+The above method is extremely common, especially by people changing
+code and running measurements on their laptops without disabling
+any frequency scaling features.
+
+We need to be careful about being biased by the compilation itself.
+Frequency scaling can kick in when a compiler works harder to
+produce more optimized binaries. If the compiler worked much harder
+to produce a better binary, the CPU frequency may be lower
+and any subsequent measurements might be much lower.
+Faster code will appear slower.
+
 Better:
 
 ```
 * disable frequency scaling and turbo boost
+* close slack. close your web browser.
+* kill as many non-essential processes as you can get away with.
+* unset as many environment variables as possible (see papers below, it matters)
 * compile workload 1
 * compile workload 2
 * time workload 1
@@ -656,9 +670,78 @@ Better:
 * view distribution of results
 ```
 
+By running workloads interleaved with each other, we reduce the risk
+of having particular transient system-wide effects impact only a single
+measurement.
+
+By taking multiple measurements, we improve our understanding of the
+distribution of possible results given our current configuration.
+
+However, our goal is to increase the chances that we have established
+a causal link between our code changing and our desired metrics improving.
+There are many variables that we are always ignorant of. If we want to be
+more confident that our system is actually better, we can gather corroborating
+evidence that can help explain the measured effect.
+
+There are a lot of things that happen in between your code changing and
+a timing metric changing. A compiler transforms the code into machine code.
+Machine code is linked together in a certain order (causing up to a 10% performance
+impact due to link order alone, see papers below). Then when we run the binary,
+we load the various code objects into memory at addresses which may be effected
+by ASLR, further introducing a considerable amount of variance. Anything
+that impacts memory layout could have a strong impact on the effectiveness
+of our memory [caches](#cache), which use a lot of heuristics to predict
+which memory you may access next, and these may be impacted by changes
+in physical memory allocation during the run of a workload. Your CPU will
+run when it has instructions and data to zip together, but it really spends
+a huge amount of time just waiting around for its dependencies to arrive.
+Whenever your instructions and data finally show up, your CPU will execute
+them in creative ways that are later verified to conform to the dependency
+structure communicated through the compiled machine code, although they are
+often thrown away due to finding out that some data dependency has changed
+because of what some other CPU core published to the shared cache coherency
+subsystem.
+We'll get into this stuff in gory detail below in the [cache](#cache) section.
+Importantly, the CPU will update a lot of its own performance counters
+as these various operations occur.
+
+For our intermediate memory statistics, allocators like [jemalloc expose many
+metrics](https://github.com/jemalloc/jemalloc/wiki/Use-Case%3A-Basic-Allocator-Statistics)
+which can help us to explain changes in our measured resident set size.
+
+Verifying that these intermediate metrics also change in significant ways can
+help us to increase our confidence in the causal link between changed code and
+changes in high-level metrics like overall workload throughput, high-level
+operation latency, overall process memory resident set size, etc...  In
+general, the higher-level the metric, the more intermediate metrics may be
+helpful in attempting to account for the change. The more complex the
+system you're changing is, the higher the chance of falling prey to
+omitted variable bias.
+
+While running an experiment multiple times can help us account for variance,
+[it cannot help us account for bias](https://www.lesswrong.com/posts/DbQkkgfq6fHRxmdGP/statistical-bias).
+
+To reduce the likelihood that we are being impacted by bias, we must be
+conscious that bias is always present, and we must actively search for the truth.
+Funny enough, [Knowing About Biases Can Hurt
+People](https://www.lesswrong.com/posts/AdYdLP2sRqPMoe8fb/knowing-about-biases-can-hurt-people),
+so if we are going to accept the presence of bias, we must actively take
+responsibility for countering it, or we may be even worse off than before we
+became aware of bias.
+
+If you want to read more about personal debiasing, this book rules:
+[Rationality: From AI to
+Zombies](https://wiki.lesswrong.com/wiki/Rationality:_From_AI_to_Zombies).
+
+But for debiasing our experiments, we can seek corroborating evidence
+through intermediate and related metrics, as well as measuring
+possible alternative explanations for the high-level change and
+determining whether they may be the true explanation for the observed
+changes.
+
 ### experiment checklist
 
-Checklists from Raj Jain's The Art of Computer Systems Performance Analysis:
+Here are two nice checklists from Raj Jain's The Art of Computer Systems Performance Analysis:
 
 Box 2.1 Checklist for Avoiding Common Mistakes in Performance Evaluation
 
@@ -701,6 +784,7 @@ Box 2.2 Steps for a Performance Evaluation Study
 
 Further reading:
 
+* [Five ways not to fool yourself](https://timharris.uk/misc/five-ways.pdf)
 * The Art of Computer Systems Performance Analysis by Raj Jain
 * A Guide to Experimental Algorithmics by Catherine C McGeoch
 * [How Not to Measure Computer System Performance](https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html)
@@ -1016,3 +1100,8 @@ show how much time each interesting thread is spent doing:
   * sleeping: waiting for I/O or data/text page-ins
   * lock: waiting to acquire a lock
   * idle: waiting for work
+
+[Cheap tricks for high-performance Rust](https://deterministic.space/high-performance-rust.html)
+
+
+[Map and Territory](https://wiki.lesswrong.com/wiki/Map_and_Territory)
