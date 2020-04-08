@@ -479,7 +479,7 @@ fn perform_work() -> Result<(), Error> {
   call_and_handle_local_error()?;
   subtask_a()?;  <----- unhandled local error
   call_and_handle_local_error()?;
-  subtask_b()?;  <----- unhandled local error
+  subtask_b()?;
   call_and_handle_local_error()
 }
 ```
