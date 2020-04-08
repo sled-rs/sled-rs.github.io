@@ -329,8 +329,9 @@ fn caller() {
 }
 
 fn main() {
-  // our intention is to call `caller()` 3 times, whether it needs
-  // to handle errors internally or not.
+  // our intention is to call `caller()` 3 times,
+  // whether it needs to handle errors internally
+  // or not.
   caller();
   caller();
   caller();
