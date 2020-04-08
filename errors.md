@@ -570,6 +570,10 @@ test](https://github.com/spacejam/sled/blob/05de9a415c8794a775817fc1e1fd123e8ad2
 This kind of testing is among the highest bug:test code ratios that I've written
 for sled so far.
 
+[It triggered all kinds of deterministically-replayable bugs that would only
+crop up under specific combinations of errors and high-level
+operations](https://github.com/spacejam/sled/blob/05de9a415c8794a775817fc1e1fd123e8ad20d84/tests/test_tree_failpoints.rs#L479-L509).
+
 The high level idea is that when you write a function that might fail,
 add some conditionally-compiled logic that checks to see if it is
 supposed to return an error instead of execute the happy path.
