@@ -148,7 +148,7 @@ match may_fail() {
   Err(sad) => {
     eprintln!(":(");
     /* handle error */
-                                <----- we forgot to update this
+                    <----- we forgot to update this
     return;
   }
 }
@@ -662,3 +662,7 @@ make this confusion impossible to represent. The price we pay is a signature
 that involves nested `Result`s, which definitely makes the code look less cute,
 but for maintaining a real project, cute doesn't count for much compared to
 spending less time on bugs that could have been avoided.
+
+If you found this article to be useful, please consider [supporting my efforts
+efforts](https://github.com/sponsors/spacejam) to share knowledge and
+productionize cutting edge database research with implementations in Rust :)
