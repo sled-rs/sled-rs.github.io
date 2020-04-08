@@ -290,10 +290,9 @@ its success. If the intent is to call it 3 times, we now are encouraged by the
 compiler to early-exit as well.
 
 The try `?` operator can save us a lot of effort, but it also has risks. We
-are often encouraged to push error handling paths in ways that make it more
-cumbersome to handle an error in a single place. We are enticed by the easy
-early return. But try `?` is fundamentally about propagation. And we must only
-use it when we require that the caller handles the issue that has popped up.
+are enticed by the easy early return. But try `?` is fundamentally about
+propagation. And we must only use it when we require that the caller handles
+the issue that has popped up.
 
 Our intention is to call `caller()` 3 times in `main()`, regardless of whether
 `caller()` needs to handle errors internally or not. This is what we really
