@@ -611,7 +611,7 @@ system the first time these kinds of simple tests are applied.
 
 Eventually this led me to go for what felt like the nuclear solution, but after
 seeing how many bugs it immediately rooted out by simply refactoring the
-system, I'm convinced that this is the only way to do error handling where
+codebase, I'm convinced that this is the only way to do error handling where
 we have multiple error handling concerns in Rust today.
 
 That solution: make the global `Error` enum specifically only hold errors that
