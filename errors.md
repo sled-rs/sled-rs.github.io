@@ -289,8 +289,8 @@ This gets rid of the compiler warning. However, this is buggy, because the
 its success. If the intent is to call it 3 times, we now are encouraged by the
 compiler to early-exit as well.
 
-The try `?` operator can save us a lot of effort, but it also has risks. We
-are enticed by the easy early return. But try `?` is fundamentally about
+The try `?` operator can save us a lot of effort, but it also has risks. We are
+enticed by the easy early return. But try `?` is fundamentally about
 propagation. And we must only use it when we require that the caller handles
 the issue that has popped up.
 
@@ -477,9 +477,9 @@ fn call_and_handle_local_error() -> Result<(), Error> {
 
 fn perform_work() -> Result<(), Error> {
   call_and_handle_local_error()?;
-  subtask_a()?;
+  subtask_a()?;  <----- unhandled local error
   call_and_handle_local_error()?;
-  subtask_b()?;
+  subtask_b()?;  <----- unhandled local error
   call_and_handle_local_error()
 }
 ```
