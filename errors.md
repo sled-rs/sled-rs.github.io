@@ -1,4 +1,5 @@
-# error handling in Rust
+# Error Handling in a Correctness-Critical Rust Project
+
 
 [![github](https://img.shields.io/github/stars/spacejam/sled.svg?style=social)](https://github.com/spacejam/sled)
 [![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled)
