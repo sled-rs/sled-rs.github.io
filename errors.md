@@ -532,7 +532,7 @@ The IO error basically requires shutting down the system immediately until the p
 with the underlying system can be addressed. But the compare and swap is totally expected
 to fail all the time. It's completely normal behavior. Unfortunately, users were no longer
 able to rely on the try operator at all, because they had to actually do a partial
-pattern match on the returnned result object:
+pattern match on the returned result object:
 
 ```rust
 let result = sled.compare_and_swap(
