@@ -25,7 +25,7 @@ testing of error handling code.
 These stats haunt me. They cause me to frequently ask myself "how can I design
 my systems to increase the chances that errors will be handled correctly?"
 
-This leads us to two goals:
+This leads to two goals:
 
 1. when an error happens, it is handled correctly
 2. error handling logic is triggered under test
