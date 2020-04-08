@@ -362,7 +362,7 @@ Imagine this system where we are expecting to encounter both handlable simple
 errors and much more serious fatal errors. We will use the global error enum
 style that has become popular:
 
-```
+```rust
 struct LocalError;
 struct FatalError;
 
@@ -411,7 +411,7 @@ Everything looks pretty normal. Especially because there's actually no
 error handling that is happening, in violation of goal #1 above.
 Let's handle our local errors:
 
-```
+```rust
 fn subtask_a() -> Result<(), LocalError> {
   /* perform work, maybe fail */
 }
@@ -450,7 +450,7 @@ by handling it specifically in a particular place. But we all know how
 code changes over time. At some point, somebody is going to write code
 that looks like this:
 
-```
+```rust
 fn subtask_a() -> Result<(), LocalError> {
   /* perform work, maybe fail */
 }
@@ -503,7 +503,7 @@ in lock-free programming, and it forms the basis of many more complex
 algorithms that we all rely on every day. In the past, it basically had this
 signature:
 
-```
+```rust
 fn compare_and_swap(
   &mut self,
   key: Key,
@@ -514,7 +514,7 @@ fn compare_and_swap(
 
 where the `Error` enum had a few different variants, and looked something like this:
 
-```
+```rust
 enum Error {
   Io(std::io::Error),
   CompareAndSwap(CompareAndSwapError),
@@ -535,7 +535,7 @@ to fail all the time. It's completely normal behavior. Unfortunately, users were
 able to rely on the try operator at all, because they had to actually do a partial
 pattern match on the returnned result object:
 
-```
+```rust
 let result = sled.compare_and_swap(
   "dogs",
   "pickles",
@@ -618,7 +618,7 @@ Today, the compare and swap operation has a signature that looks clunkier, but
 it is far easier to use, and internally the system has become far more stable by
 isolating concerns to their own types.
 
-```
+```rust
 fn compare_and_swap(
   &mut self,
   key: Key,
@@ -631,7 +631,7 @@ While on first glance this looks way less cute, it significantly
 improves the chances that users will properly handle their
 compare and swap-related errors properly:
 
-```
+```rust
 // we can actually use try `?` now
 let cas_result = sled.compare_and_swap(
   "dogs",
