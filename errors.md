@@ -522,7 +522,7 @@ enum Error {
 
 If you correctly guessed the previous value associated with the given key, sled would
 atomically update the value to the new one you provided, and return `Ok(())`. If you
-guessed the wrong old value, it would return `Err(sled::Error::CompareAndSwap(cas_error))`.
+guessed the wrong old value, it would return `Err(sled::Error::CompareAndSwap(current_value))`.
 
 However, it would also return an error if an IO issue was encountered at some point during
 the execution of the operation.
