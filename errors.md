@@ -43,8 +43,9 @@ pub enum Result<T, E> {
     Err(E),
 }
 
-// This `use` lets us write `Ok(Happy)` instead of `Result::Ok(Happy)` as we
-// need to do with other enums by default.
+// This `use` lets us write `Ok(Happy)` instead
+// of `Result::Ok(Happy)` as we need to do with
+// other enums by default.
 pub use Result::{Ok, Err};
 ```
 
@@ -147,6 +148,7 @@ match may_fail() {
   Err(sad) => {
     eprintln!(":(");
     /* handle error */
+                                <----- we forgot to update this
     return;
   }
 }
