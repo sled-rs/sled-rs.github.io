@@ -680,6 +680,27 @@ that involves nested `Result`s, which definitely makes the code look less cute,
 but for maintaining a real project, cute doesn't count for much compared to
 spending less time on bugs that could have been avoided.
 
+We can easily test our failure handling logic
+by using tools like PingCAP's [`fail` crate](https://docs.rs/fail).
+
+Let's end with the same two
+[quotes](http://www.eecg.toronto.edu/~yuan/papers/failure_analysis_osdi14.pdf)
+that we began with:
+
+```
+almost all (92%) of the catastrophic system failures
+are the result of incorrect handling of non-fatal errors
+explicitly signaled in software.
+```
+
+```
+in 58% of the catastrophic failures, the underlying
+faults could easily have been detected through simple
+testing of error handling code.
+```
+
+Thanks for reading!
+
 If you found this article to be useful, please consider [supporting my efforts
 efforts](https://github.com/sponsors/spacejam) to share knowledge and
 productionize cutting edge database research with implementations in Rust :)
