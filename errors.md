@@ -583,6 +583,10 @@ I got the most milage out of combining it with property testing
 because I prefer to have machines write tests for me, while
 I focus on making claims about what should happen.
 
+But even just flipping a global static `AtomicBool` that is compiled during testing
+that causes your potentially failing codepaths to intentionally fail sometimes
+will cause so many bugs to jump out in your systems.
+
 This caused many of the above bugs relating to the error
 enum handling to jump out. But they kept getting introduced,
 becuase it was difficult to always keep in my mind where
@@ -599,8 +603,9 @@ over time = less bugs.
 
 The important thing: most catastrophic systems bugs exist in our error handling
 code. It's not very much work to trigger that error handling logic in our
-tests. Just flip a global static `AtomicBool` that is compiled during testing
-that causes your potentially failing codepaths to intentionally fail.
+tests. You will find lots of important bugs as soon as you start manually
+triggering these failure handling paths. Many bugs will usually be found in a
+system the first time these kinds of simple tests are applied.
 
 # making unhandled errors unrepresentable
 
