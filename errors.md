@@ -566,7 +566,7 @@ successful efforts that resulted in finding the most bugs boiled down to
 randomly causing different operations to fail by triggering them through
 PingCAP's [`fail` crate](https://docs.rs/fail) and [combining it with property
 testing to cause various combinations of failures to be triggered under
-test](https://github.com/spacejam/sled/blob/05de9a415c8794a775817fc1e1fd123e8ad20d84/tests/test_tree_failpoints.rs)
+test](https://github.com/spacejam/sled/blob/05de9a415c8794a775817fc1e1fd123e8ad20d84/tests/test_tree_failpoints.rs).
 This kind of testing is among the highest bug:test code ratios that I've written
 for sled so far.
 
