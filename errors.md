@@ -652,15 +652,20 @@ if let Err(cas_error) = cas_result {
 }
 ```
 
-By using nested `Result`s, we allow ourselves to take advantage
-of the wonderful short-circuit and error propagation properties
-of the try `?` operator, without exposing ourselves to an endless
-deluge of bugs relating to mashing all of our errors into a gross
-single type. We are able to rely on the beautiful bug-reducing
-capabilities of performing exhaustive pattern matching again,
-without making guesses about which variants may or may not
-need to be handled at specific places. We increase the chances
-that we correctly handle errors.
+By using nested `Result`s, we allow ourselves to take advantage of the
+wonderful short-circuit and error propagation properties of the try `?`
+operator, without exposing ourselves to an endless deluge of bugs relating to
+mashing all of our errors into a gross single type. We are able to rely on the
+beautiful bug-reducing capabilities of performing exhaustive pattern matching
+again, without making guesses about which variants may or may not need to be
+handled at specific places. By separating error types, we increase the chances
+that we correctly handle errors at all.
+
+Use try `?` for propagating errors. Use exhaustive pattern matching on concerns
+you need to handle. Do not implement conversions from local concerns into
+global enums, or your local concerns will find themselves in inappropriate
+places over time. Using separate types will lock them out of where they don't
+belong.
 
 # in summary
 
