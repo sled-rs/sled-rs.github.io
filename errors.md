@@ -242,7 +242,8 @@ warning: unused `std::result::Result` that must be used
   |     ^^^^^^^^^
   |
   = note: `#[warn(unused_must_use)]` on by default
-  = note: this `Result` may be an `Err` variant, which should be handled
+  = note: this `Result` may be an `Err` variant,
+          which should be handled
 ```
 
 So, you could easily imagine someone writing code like this, with a `main()`
