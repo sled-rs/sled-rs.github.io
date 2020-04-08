@@ -371,8 +371,12 @@ enum Error {
 // to automatically turn a specific error into
 // the global `Error` when early-returning
 // from functions
-impl From<LocalError> for Error { /* Error::Local(LocalError) */ }
-impl From<FatalError> for Error { /* Error::Fatal(FatalError) */ }
+impl From<LocalError> for Error {
+  // Error::Local(LocalError)
+}
+impl From<FatalError> for Error {
+  // Error::Fatal(FatalError)
+}
 
 fn subtask_a() -> Result<(), LocalError> {
   /* perform work, maybe fail */
@@ -496,7 +500,12 @@ algorithms that we all rely on every day. In the past, it basically had this
 signature:
 
 ```
-fn compare_and_swap(&mut self, key: Key, old_value: Value, new_value: Value) -> Result<(), sled::Error>
+fn compare_and_swap(
+  &mut self,
+  key: Key,
+  old_value: Value,
+  new_value: Value
+) -> Result<(), sled::Error>
 ```
 
 where the `Error` enum had a few different variants, and looked something like this:
@@ -523,10 +532,15 @@ able to rely on the try operator at all, because they had to actually do a parti
 pattern match on the returnned result object:
 
 ```
-let result = sled.compare_and_swap("dogs", "pickles", "catfood");
+let result = sled.compare_and_swap(
+  "dogs",
+  "pickles",
+  "catfood"
+);
 match result {
   Ok(()) => {},
-  Err(sled::Error::Io(io_error)) => return Err(io_error.into()),
+  Err(sled::Error::Io(io_error)) =>
+    return Err(io_error.into()),
   Err(sled::Error::CompareAndSwap(cas_error)) => {
     // handle expected issue
   }
@@ -615,7 +629,11 @@ compare and swap-related errors properly:
 
 ```
 // we can actually use try `?` now
-let cas_result = sled.compare_and_swap("dogs", "pickles", "catfood")?;
+let cas_result = sled.compare_and_swap(
+  "dogs",
+  "pickles",
+  "catfood"
+)?;
 
 if let Err(cas_error) = cas_result {
     // handle expected issue
