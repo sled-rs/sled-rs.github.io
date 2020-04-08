@@ -321,7 +321,9 @@ fn call_and_handle() -> bool {
 
 fn caller() {
   // using && will also short-circuit evaluation
-  if call_and_handle() && call_and_handle() && call_and_handle() {
+  if call_and_handle()
+    && call_and_handle()
+    && call_and_handle() {
     println!("I am so happy right now");
   }
 }
