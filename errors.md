@@ -155,7 +155,7 @@ match may_fail() {
 }
 ```
 
-So, it' helps to centralize the error handling logic:
+So, it helps to centralize the error handling logic:
 
 ```rust
 fn may_fail() -> Result<Happy, Sad> {
