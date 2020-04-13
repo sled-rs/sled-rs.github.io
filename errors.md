@@ -359,7 +359,7 @@ our goal is for those errors to be handled correctly. This is almost
 impossible to do correctly when all possible errors may end up being
 converted into this big-ball-of-mud single error enum.
 
-Imagine this system where we are expecting to encounter both handlable simple
+Imagine this system where we are expecting to encounter both handleable simple
 errors and much more serious fatal errors. We will use the global error enum
 style that has become popular:
 
@@ -495,7 +495,7 @@ possible now. This happens all the time in real code.
 sled has an `Error` enum of its own. It can store various types of horrific
 failures that you really want the user to be aware of, like if operations on
 the backing file start to fail. We basically want to shut down the system
-immediately to minimize the chance that dataloss will happen without the user
+immediately to minimize the chance that data loss will happen without the user
 being aware of it.
 
 sled has a method that allows the user to atomically change the value of a key,
@@ -591,7 +591,7 @@ will cause so many bugs to jump out in your systems.
 
 This caused many of the above bugs relating to the error
 enum handling to jump out. But they kept getting introduced,
-becuase it was difficult to always keep in my mind where
+because it was difficult to always keep in my mind where
 it might be possible for a compare and swap-related failure
 to crop up, as there is a lot of lock-free conditional
 logic in the sled codebase.
@@ -703,6 +703,6 @@ testing of error handling code.
 
 Thanks for reading!
 
-If you found this article to be useful, please consider [supporting my efforts
+If you found this article to be useful, please consider [supporting my
 efforts](https://github.com/sponsors/spacejam) to share knowledge and
 productionize cutting edge database research with implementations in Rust :)
