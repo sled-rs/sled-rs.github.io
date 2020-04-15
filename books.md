@@ -56,18 +56,50 @@ Making Databases Work
 
 <a target="_blank"  href="https://www.amazon.com/gp/product/1947487191/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=1947487191&linkCode=as2&tag=tylerneely06-20&linkId=69f28206ab35fce2da868ce0ca49cc90"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=1947487191&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=1947487191" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
 
+# Epistemology
+
+## Prometheus Rising
+
+<a target="_blank"  href="https://www.amazon.com/gp/product/B00N4F41OE/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B00N4F41OE&linkCode=as2&tag=tylerneely06-20&linkId=12fd5d613e43bbb71d954dd3362e06d5"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=B00N4F41OE&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=B00N4F41OE" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
+
+This book is pretty extreme, and you're likely to disagree with some of the
+specifics of human developmental psychology that it goes into. But there are a
+ton of random interesting thoughts scattered throughout the book.  In
+particular, this book introduced me to
+[e-prime](https://en.wikipedia.org/wiki/E-Prime), which has helped me to
+significantly remove ambiguity from technical discussions and notes that I take
+for myself.  Generally, by being precise (especially by avoiding the verb
+to-be) and providing accurate context, we can improve the quality of our
+understanding and communication. It's the strangest book on this list.
+
+## Map and Territory
+
+<a target="_blank"  href="https://www.amazon.com/gp/product/B07LDF7J3Q/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B07LDF7J3Q&linkCode=as2&tag=tylerneely06-20&linkId=3ff5a1ec3fc98005b7c60b302a21e166"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=B07LDF7J3Q&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=B07LDF7J3Q" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
+
+This is the first book from [Rationality: From AI to
+Zombies](https://wiki.lesswrong.com/wiki/Rationality:_From_AI_to_Zombies), an
+incredibly comprehensive text that discusses how to make better decisions
+despite our own significant biases and the information we have access to. It
+covers "the nature of rationality, belief, and explanation".
+
+## How to Actually Change Your Mind
+
+<a target="_blank"  href="https://www.amazon.com/gp/product/B07LDTN399/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B07LDTN399&linkCode=as2&tag=tylerneely06-20&linkId=f69797743535f0bf0ceedf220eee66b2"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=B07LDTN399&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=B07LDTN399" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
+
+This is the second book from [Rationality: From AI to
+Zombies](https://wiki.lesswrong.com/wiki/Rationality:_From_AI_to_Zombies).  It
+"covers the ultra-high-level penultimate technique of rationality: triumphing
+over confirmation bias and motivated cognition."
+
 # Human Interaction:
 
 Nonviolent Communication
 
 <a target="_blank"  href="https://www.amazon.com/gp/product/189200528X/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=189200528X&linkCode=as2&tag=tylerneely06-20&linkId=7aeb923ead5e534bbe8f6d002138139c"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=189200528X&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=189200528X" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
 
-How to Actually Change Your Mind
-
-<a target="_blank"  href="https://www.amazon.com/gp/product/B07LDTN399/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B07LDTN399&linkCode=as2&tag=tylerneely06-20&linkId=f69797743535f0bf0ceedf220eee66b2"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=B07LDTN399&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=B07LDTN399" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
-
-Map and Territory
-
-<a target="_blank"  href="https://www.amazon.com/gp/product/B07LDF7J3Q/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=B07LDF7J3Q&linkCode=as2&tag=tylerneely06-20&linkId=3ff5a1ec3fc98005b7c60b302a21e166"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=B07LDF7J3Q&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=B07LDF7J3Q" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
-
-
+This book covers the most important skill for engineering: communicating with
+other humans. This book discusses a particularly powerful technique for saying
+things in ways that reduce the cost for the other side to hear them.  Along
+with e-prime from Prometheus Rising, this book has radically changed how I
+interact with humans while having discussions that have the chance to become
+heated.
