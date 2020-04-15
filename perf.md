@@ -82,7 +82,7 @@ information that will help you to better understand your partners. I think most
 folks will learn something new. I know I have. And, part of why I wrote this is
 to have a single place with a memorable URL where I can return to when I forget
 most of this stuff. Most importantly, when I unfurl fiery screeds in random
-internet comments I want to have an intimidating reference to which I
+internet comments I want to have an intimidating reference to which I can
 mercilesly link.
 
 I initially wrote this guide for the Rust ecosystem, where many people are now
@@ -131,13 +131,15 @@ Let's kick this shit up! Here's what it's gonna look like...
   * [experimental design](#experimental-design)
     * [experiment checklist](#experiment-checklist)
 * ##### CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
+  * [concurrency and parallelism](#concurrency-and-parallelism)
   * [amdahl's law](#amdahls-law)
   * [universal scalability law](#universal-scalability-law)
   * [trade-offs](#trade-offs)
-    * time vs space
-    * memory pressure vs contention
-    * parallelism vs concurrency
-    * the RUM conjecture
+    * [time vs space](#time-vs-space)
+    * [memory pressure vs contention](#memory-pressure-vs-contention)
+    * [speculation](#speculation)
+    * [the RUM conjecture](#the-RUM-conjecture)
+    * [scheduling](#scheduling)
 * ##### CHAPTER 0b0010: THE MACHINE
   * [computation](#computation)
   * [hardware effects](#hardware-effects)
@@ -393,7 +395,7 @@ An auto-tuning low-latency system must scale something other than the queue
 length when throughput increases if it is going to keep maintaining low
 latency. Low-latency is dependent on keeping the the amount of time waiting in a
 queue beneath a desired threshold. So, instead of increasing the batch size, we
-must increase the amount of parallelism by using more threads, more servers,
+must increase the amount of parallelism by using more cores, more servers,
 etc... However, as [Amdahl's Law](#amdahls-law) and
 [USL](#universal-scalability-law) show, we can only parallelize a program by a
 certain amount, and the very act of parallelization will impose additional
@@ -712,7 +714,7 @@ which can help us to explain changes in our measured resident set size.
 Verifying that these intermediate metrics also change in significant ways can
 help us to increase our confidence in the causal link between changed code and
 changes in high-level metrics like overall workload throughput, high-level
-operation latency, overall process memory resident set size, etc...  In
+operation latency, overall process memory resident set size, etc... In
 general, the higher-level the metric, the more intermediate metrics may be
 helpful in attempting to account for the change. The more complex the
 system you're changing is, the higher the chance of falling prey to
@@ -803,6 +805,81 @@ Further reading:
 
 # CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
 
+## concurrency and parallelism
+
+* **parallelism** is when a task may execute independently of other things
+* **concurrency** is when a task may be paused until some dependency is satisfied
+
+This definition may feel a bit strange to most people. After all, isn't
+concurrency when we are spinning up lots of things that will run at once, like
+a new thread or async task?
+
+When we describe our concurrent programs, we are usually writing a lot of code
+that relates to finding out what happened somewhere else, getting some
+information from another place or another task, maybe blocking on a channel or
+a socket, or writing some information to a different place. But usually, this
+means that we need to block until some activity outside of our local control
+finishes. Blocking until the kernel can write our data into a socket, blocking
+until some other thread pushes an item into a queue that we're receiving from,
+blocking until all 5000 servers have finished counting the occurrences of the
+trending term "hand sanitizer" from user activity logs in the past 24 hours,
+etc...
+
+When we talk about concurrency, we're talking about suspending our execution
+until various dependencies are satisfied. It's kind of declarative, in that we
+describe our dependencies, and then we expect an external scheduler to ensure
+that our code will run when our dependencies are met.
+
+Parallelism is sort of the opposite, in that it is when things can run at
+the same time due to not having dependencies which are unmet. It implies
+more flexibility for your schedulers, because they can just run your code
+without worrying about satisfying dependencies in some order. But it's
+more restrictive for the programmer, as they must write their task
+in such a way that it is able to make progress independently of other
+tasks. This is simply not possible for many types of problems, like
+cryptographically hashing a number 4000 times - as each subsequent
+round requires the previous one to complete first.
+
+However, if we are able to write programs such that multiple tasks that can
+make progress independently of each other, it is possible to schedule them (if
+system resources are available) to run at the same time, thus reducing overall
+execution time.
+
+Parallelism vs concurrency is a trade-off between:
+* scheduler flexibility vs human flexibility
+* independence vs blocking
+*
+
+One insight is that a sequential, single-threaded execution can be placed
+squarely in the middle of parallelism and concurrency in each of the above
+trade-offs.
+
+While some schedulers may be able to run concurrent tasks in parallel
+when they are known not to have any sequential dependencies, the high-level
+approach is already starting at a conservative point that prevents common
+techniques like optimistic non-blocking algorithms from better taking advantage
+of the parallelism that our hardware could provide us with.
+
+Over time, our hardware is becoming much more parallel - more CPU cores,
+more memory channels, more parallel GPU circuitry, etc... And if we want
+to take advantage of it, we simply must write programs that can make
+progress on multiple system resources in parallel.
+
+For a video that goes into the parallelism vs concurrency design space,
+check out a few minutes after 8:18 in this presentation:
+
+CppCon 2019: Eric Niebler, David Hollman “A Unifying Abstraction for Async in C++”
+<iframe width="560" height="315" src="https://www.youtube.com/embed/tF-Nz4aRWAM?start=498" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+If you have high costs associated with putting work back together, or
+associated with contending on a resource (too many threads for your cpus,
+mutexes, etc...) then your parallelism gains will be negatively impacted. So, to
+properly take advantage of parallelism, we must minimize the amount of work we
+spend waiting for a shared resource, and blocking on other tasks to complete,
+or paying costs of merging parallel work together. Less sharing at all means
+more throughput because things can run independently of each other sled tries
+to share very little across requests.
+
 ## amdahl's law
 
 [Amdahl's law](https://en.wikipedia.org/wiki/Amdahl%27s_law) is a tool for
@@ -836,20 +913,19 @@ The main takeaway:
 ## universal scalability law
 
 The USL is an excellent way to reason about the potential gains (or negative
-impacts) of parallelism. It goes farther than Amdahl's law because it starts to
+impacts) of concurrency. It goes farther than Amdahl's law because it starts to
 be able to describe how concurrency can start to introduce significant negative
 costs due to the work that must be done by virtue of making a workload concurrent
 at all.
 
 The USL describes two costs associated with adding more concurrency to a workload:
 
-* contention - the amount that more waiting will happen for shared
-  resources as concurrency increases.
+* contention - the amount that more concurrent work leads to more waiting for shared
+  resources like a mutex, disk head, CPU core, etc...
 * coherency - the amount that costs must be paid to reassemble or
   block on other work as the amount of concurrency increases in the system
 
 ![graphs showing how contention flattens the scalability curve and incoherency pulls it down](art/usl.png)
-
 
 The USL shows that concurrency can reduce possible gains of parallelism by
 introducing contention and coherency costs. Contention is effectively the
@@ -882,24 +958,74 @@ resource, such as some state that is protected by a mutex or a reader-writer
 lock. In many cases, it's possible to reduce contention by spending more
 memory.
 
-For example, we can remove the requirement to have readers take out locks
-at all by having any thread that acquires the mutex first make a local
-copy, perform its desired changes on the local copy, and then when finished
-swap an atomic pointer that readers may follow without ever acquiring a lock
-first. In this case, we are forcing the shared mutable state to exist behind
-a pointer, and re will do a new allocation each time we want to modify the
-data.
+For example, we can remove the requirement to have readers take out locks at
+all by having any thread that acquires the mutex first make a local copy,
+perform its desired changes on the local copy, and then when finished swap an
+atomic pointer to install their update. Readers may follow this pointer without
+ever acquiring a lock first. In this case, we will do a new allocation each
+time we want to modify the data. But for read-heavy structures, this technique
+can keep a system running without needless blocking. Care needs to be used to
+avoid destroying and freeing the previous version while readers may still be
+accessing it, either by using a garbage collected language, atomic reference
+counters, or something like hazard pointers or epoch-based reclamation.
 
-[Elimination back-of stack](https://max-inden.de/blog/2020-03-28-elimination-backoff-stack)
-[A Scalable Lockfree Stack Algorithm](https://www.cs.bgu.ac.il/%7Ehendlerd/papers/p206-hendler.pdf)
-* elimination stack
+### speculation
 
-### parallelism vs concurrency
+While things like speculative execution have gotten kind of a bad rap due to
+Spectre and other CPU information leak vulnerabilities that relate to it,
+optimistic and speculative execution is fundamental for many areas of systems
+programming. It shows up in many places in our operating systems, browsers,
+standard libraries, etc... Ubiquitous lock-free algorithms that power our
+queues rely on this heavily.
 
-CppCon 2019: Eric Niebler, David Hollman “A Unifying Abstraction for Async in C++”
-<iframe width="560" height="315" src="https://www.youtube.com/embed/tF-Nz4aRWAM?start=498" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+There are two forms of speculation:
+
+* **predictive execution**: instead of spending the (often high) cost for
+  acquiring exclusive access to a resource or knowing with certainty about some
+  outcome, we just make a guess that our desired outcome will happen, and we
+  find out later on if it was a correct bet or not. This bet makes sense when
+  the cost of being wrong about the bet times the chance of being wrong about
+  the bet is lower than the cost of acquiring exclusive access or determining
+  some outcome with certainty first on every request.
+* **eager execution**: perform an operation based on every possible input to
+  the computation. Later on, when the actual input is known, just
+  choose the result that you already computed. This sounds kind of absurd, but
+  Margo's linked talk above shows that this can really be pushed far in some
+  situations.
+
+In general, it's more common in software to write code that is predictively
+speculative. Lock-free algorithms often make a bet about the current value of a
+pointer, perform some work, and then use an atomic compare-and-swap (CAS)
+operation to try to mutate the shared pointer to a new modified value if the
+predicted previous value was properly guessed. If some other thread changed the
+pointer already, the guess about the previous value will be incorrect, and the
+operation will either retry using the new value or it will fail. We will cover
+lock-free and wait-free algorithms in much more detail below.
+
+Speculation is a key tenant in taking advantage of parallel hardware, because
+it lets us make bets about contention and possibly throw work away if our bet
+didn't pan out.
+
 
 ### the RUM conjecture
+
+### scheduling
+
+Request-response workloads are well served by prioritizing work in this order:
+
+* first run things that are ready to write, as they signify work that is
+  finished
+* things that are ready to read, as they are work that has been accepted and
+  the timer is ticking for
+* only accept based on a desired queue depth based on your latency/throughput
+  position. If you care about latency above everything, never accept unless all
+  writes and reads are serviced and blocked. If you care about throughput above
+  all else, you want to oversubscribe and accept a lot more work to reduce the
+  frequency that your system bottoms out and has no work to do. You don’t want
+  to accept work that you’re not servicing though if latency is a priority, and
+  you want a smaller TCP backlog that will fill up and provide backpressure for
+  your load balancer so it can do its job.
+
 
 # CHAPTER 0b0010: THE MACHINE
 
@@ -931,6 +1057,10 @@ less attention to hardware friendliness.
 This is why we have several levels of caches in front of the main memory.
 
 ### cache
+
+This list has been extracted from [Kobzol's wonderful hardware effects GitHub repo](https://github.com/Kobzol/hardware-effects).
+[Ben Titzer - What Spectre Means for Language Implementors](https://www.youtube.com/watch?v=FGX-KD5Nh2g)
+
 
 Further reading:
 
@@ -964,9 +1094,6 @@ heavily throttled.
 
 If you have an Intel CPU, you can use the `i7z` command, to see what your cores
 are currently doing. It is available in most Linux package managers.
-
-This list has been extracted from [Kobzol's wonderful hardware effects GitHub repo](https://github.com/Kobzol/hardware-effects).
-[Ben Titzer - What Spectre Means for Language Implementors](https://www.youtube.com/watch?v=FGX-KD5Nh2g)
 
 ### 4k-aliasing
 
@@ -1014,6 +1141,126 @@ See [rust/54878](https://github.com/rust-lang/rust/issues/54878) for the current
 status of the effort to support this. It's a big deal. There's a reason we still
 use Fortran libraries in much of our linear algebra (and implicitly, our machine
 learning) libraries.
+
+[Cheap tricks for high-performance Rust](https://deterministic.space/high-performance-rust.html)
+
+## async tasks
+
+Rust's async tasks are a simple mechanism for describing blocking behavior. By
+using `async` blocks and functions, we can describe state machines that will
+block on certain dependencies while executing. Within an
+`async` block, we may use the `await` feature to suspend execution of the state
+machine until progress may be made. Most magic-feeling functionality in Rust
+happens because a particular trait was implemented, and async code is no different.
+In Rust, asynchronicity relies on the `Future` trait. `async` functions and blocks
+compile into objects which implement the `Future` trait.
+
+The `Future` trait has one method: `poll`:
+
+```rust
+pub trait Future {
+    type Output;
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output>;
+}
+
+pub enum Poll<T> {
+    Ready(T),
+    Pending,
+}
+```
+
+A `Future` expects to have `poll` called by an "executor" which provides a
+`Context` object. The `Context` object provides a way for the polled future to
+register a callback that will be notified when it is ready to be polled again,
+if it is not already `Ready`.
+
+Here's a minimal executor that can run a single `Future` to completion. If the
+polled `Future` is not yet ready, it will sleep until the backing `Future`
+signals that it is ready to be polled again through the provided `Context`:
+
+```rust
+use std::sync::{Arc, Condvar, Mutex};
+use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
+
+#[derive(Default)]
+struct Park(Mutex<bool>, Condvar);
+
+fn unpark(park: &Park) {
+    *park.0.lock().unwrap() = true;
+    park.1.notify_one();
+}
+
+static VTABLE: RawWakerVTable = RawWakerVTable::new(
+    |clone_me| unsafe {
+        let arc = Arc::from_raw(clone_me as *const Park);
+        std::mem::forget(arc.clone());
+        RawWaker::new(Arc::into_raw(arc) as *const (), &VTABLE)
+    },
+    |wake_me| unsafe { unpark(&Arc::from_raw(wake_me as *const Park)) },
+    |wake_by_ref_me| unsafe { unpark(&*(wake_by_ref_me as *const Park)) },
+    |drop_me| unsafe { drop(Arc::from_raw(drop_me as *const Park)) },
+);
+
+/// Run a `Future`.
+pub fn run<F: std::future::Future>(mut f: F) -> F::Output {
+    // we shadow the input `Future` to prove the `Pin` correct
+    let mut f = unsafe { std::pin::Pin::new_unchecked(&mut f) };
+
+    // we must put the `Park` structure in an `Arc` because
+    // the backing `Future` may send the waker to another thread
+    let park = Arc::new(Park::default());
+    let sender = Arc::into_raw(park.clone());
+    let raw_waker = RawWaker::new(sender as *const _, &VTABLE);
+    let waker = unsafe { Waker::from_raw(raw_waker) };
+    let mut cx = Context::from_waker(&waker);
+
+    loop {
+        match f.as_mut().poll(&mut cx) {
+            Poll::Pending => {
+                let mut runnable = park.0.lock().unwrap();
+                while !*runnable {
+                    runnable = park.1.wait(runnable).unwrap();
+                }
+                *runnable = false;
+            }
+            Poll::Ready(val) => return val,
+        }
+    }
+}
+```
+
+In the section on the [universal scalability law](#universal-scalability-law)
+we discussed how concurrency often undermines possible performance gains of
+parallelization. Looking at this minimal executor, we can see a number of
+potential sources for contention and coherency costs which will drag down our
+scalability curve if we are not careful.
+
+There is currently no way to tell a `Context` / `Waker` that your task is
+blocked due to a particular kind of event, which makes using this interface
+challenging when an author desires to implement priority-based scheduling
+techniques like the ones [discussed in the scheduling section
+above](#scheduling). If this interface is used while builidng such a scheduler,
+one must feed information out-of-band via something like thread local
+variables.
+
+Memory usage is often cited as a benefit for using async tasks, however,
+it's quite easy for these to balloon to several megabytes in production
+workloads, because in a sense, it's the most pessimistic stack possible.
+Make sure you use memory profilers to determine the actual memory use
+of your systems, and perform responsible capacity planning to ensure
+that you are not just assuming that it will be low-memory due to
+using async tasks instead of threads.
+[Tyler Mandry from Google touches on this at his talk at RustFest Barcelona](https://www.youtube.com/watch?v=ZHP9sUqB3Qs).
+
+Async tasks are generally a great fit for then you must block many tasks that
+perform very little computation, such as when you build a load balancer. Only
+then do context switches become measurable compared to the actual workload
+being scheduled. This effect is often distorted by the way that people tend to
+run microbenchmarks which don’t perform computation and memory accesses in ways
+that match what they are likely to encounter in production, making it seem like
+the proportion of CPU budget consumed by context switches is large, but for
+anything de/serializing json, the context switch is often noise in comparison.
+Measure performance of realistic workloads on realistic hardware.
 
 ```
 Everybody is ignorant, only on different subjects
@@ -1111,7 +1358,17 @@ show how much time each interesting thread is spent doing:
   * lock: waiting to acquire a lock
   * idle: waiting for work
 
-[Cheap tricks for high-performance Rust](https://deterministic.space/high-performance-rust.html)
 
 
-[Map and Territory](https://wiki.lesswrong.com/wiki/Map_and_Territory)
+[Optimizable Code](https://deplinenoise.wordpress.com/2013/12/28/optimizable-code/)
+
+[Array Layouts For Comparison-Based Searching](https://arxiv.org/pdf/1509.05053.pdf)
+
+https://profiler.firefox.com/docs/#/./guide-perf-profiling
+https://profiler.firefox.com/
+https://github.com/KDAB/hotspot
+
+[Elimination back-of stack](https://max-inden.de/blog/2020-03-28-elimination-backoff-stack)
+[A Scalable Lockfree Stack Algorithm](https://www.cs.bgu.ac.il/%7Ehendlerd/papers/p206-hendler.pdf)
+* elimination stack
+
