@@ -93,7 +93,7 @@ over confirmation bias and motivated cognition."
 
 # Human Interaction:
 
-Nonviolent Communication
+## Nonviolent Communication
 
 <a target="_blank"  href="https://www.amazon.com/gp/product/189200528X/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=189200528X&linkCode=as2&tag=tylerneely06-20&linkId=7aeb923ead5e534bbe8f6d002138139c"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=189200528X&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=189200528X" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
 
