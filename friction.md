@@ -7,7 +7,7 @@ by Tyler Neely on April 17 2020
 [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
 [![sponsors](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
 
-Often we publish libs that we hope our users will have extreme difficulty in
+Often we publish libraries that we hope our users will have extreme difficulty in
 using for their own purposes. Everyone loves a good puzzle! The Rust ecosystem
 is particularly maniacal in this regard. It's good.
 
