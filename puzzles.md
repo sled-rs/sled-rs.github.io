@@ -15,16 +15,16 @@ In building puzzle crates, I've found a few techniques to be quite helpful in
 really challenging users to make progress in their own efforts to write
 programs. Use these techniques wherever possible in publicly exported code:
 
-1. require use of generics everywhere
-  * nice and infectious, your users will have to refactor any structure that may contain this type
-1. require use of lifetimes wherever possible
+1. require the use of generics everywhere
+  * nice and infectious, your users will have to refactor any structure that may contain your types
+1. require the use of lifetimes wherever possible
   * even more devious than normal generics, as they are poorly understood in the community
-1. require use of typestate programming as often as possible
+1. require the use of typestate programming as often as possible
   * typestates are nearly impossible to document in a low-friction way
   * leads to beautifully obfuscated error messages
-1. require use of your own macros
+1. require the use of your own macros
   * your users already learned Rust. why not give them your own language that they must now learn to use your macro?
-1. require use of your own traits, ideally with as many associated types as possible
+1. require the use of your own traits, ideally with as many associated types as possible
   * this is great for forcing users to leave their text editor to start reading your trait documentation,
     get confused, look at your source code, lose their attention and go look at why-combulatar.
 1. require flipping on a particular combination of compile-time features to unlock the desired functionality
