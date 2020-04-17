@@ -67,14 +67,15 @@ may use all of the `&[u8]` slice methods.
 
 ## Error Handling
 
-All sled operations return a `sled::Result` that should never
-be ignored. If this is an `Err`, it means a serious unexpected issue
-has happened. Operations that may fail in expected ways, like
-`compare_and_swap`, have a return type of `sled::Result<CompareAndSwapResult>`
-where the expected failure is nested inside the unexpected failure.
-This allows users to use the try operator on every sled operation, and
-locally reason about errors that are likely to be encountered.
-This allows your error handling logic to take full advantage of Rust's exhaustive pattern matching.
+All sled operations return a `sled::Result` that should never be ignored. If
+this is an `Err`, it means a serious unexpected issue has happened. Operations
+that may fail in expected ways, like `compare_and_swap`, have a nested return
+type of `sled::Result<CompareAndSwapResult>` where the expected failure is
+nested inside the unexpected failure. This allows users to use the try
+operator on every sled operation, and locally reason about errors that are
+likely to be encountered. This allows your local error handling logic to take full
+advantage of Rust's exhaustive pattern matching. I've written more extensively
+about this in [a post on error handling](http://sled.rs/errors).
 
 ## Thread Safety
 
