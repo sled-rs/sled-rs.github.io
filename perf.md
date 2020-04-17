@@ -1372,3 +1372,5 @@ https://github.com/KDAB/hotspot
 [A Scalable Lockfree Stack Algorithm](https://www.cs.bgu.ac.il/%7Ehendlerd/papers/p206-hendler.pdf)
 * elimination stack
 
+"It is hard to free fools from the chains they revere."
+- Voltaire
