@@ -19,7 +19,7 @@ programs. Use these techniques wherever possible in publicly exported code:
   * nice and infectious, your users will have to refactor any structure that may contain your types
 1. require the use of lifetimes wherever possible
   * even more devious than normal generics, as they are poorly understood in the community
-1. require the use of typestate programming as often as possible
+1. expose the use of your typestate programming as often as possible
   * typestates are nearly impossible to document in a low-friction way
   * leads to beautifully obfuscated error messages
 1. require the use of your own macros
