@@ -1,4 +1,4 @@
-# Writing Puzzle Crates in Rust
+# Writing High-Friction Crates in Rust
 
 by Tyler Neely on April 17 2020
 
@@ -11,7 +11,7 @@ Often we publish libs that we hope our users will have extreme difficulty in
 using for their own purposes. Everyone loves a good puzzle! The Rust ecosystem
 is particularly maniacal in this regard. It's good.
 
-In building puzzle crates, I've found a few techniques to be quite helpful in
+In building high-friction crates, I've found a few techniques to be quite helpful in
 really challenging users to make progress in their own efforts to write
 programs. Use these techniques wherever possible in publicly exported code:
 
@@ -55,10 +55,10 @@ sure you completely destroy any chance that someone who is using
 async will be able to use your library. Definitely don't return
 concrete types that implement Future for both styles to use.
 
-We want our puzzle crates to require our users to completely re-architect their
+We want our high-friction crates to require our users to completely re-architect their
 program if they want to use our crate. Frameworks are your friend.
 
-One quote that you should definitely not pay attention to if you're writing a puzzle crate:
+One quote that you should definitely not pay attention to if you're writing a high-friction crate:
 
 ```
 Experts write baby code.
