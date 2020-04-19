@@ -1002,12 +1002,41 @@ pointer already, the guess about the previous value will be incorrect, and the
 operation will either retry using the new value or it will fail. We will cover
 lock-free and wait-free algorithms in much more detail below.
 
+Most modern databases are usually designed to perform transactions using
+optimistic concurrency control. Rather than taking out locks for items involved
+in a transaction, OCC avoids locks but performs a validation step before
+committing the transaction to check whether other transactions have interfered.
+The assumption is that for some workloads, transactions will tend to operate on
+non-overlapping data. Validating the correctness of a transaction does not
+require using locks, either.
+
+Using the framework of the [USL](#universal-scalability-law), OCC trades
+blocking contention of acquiring locks pessimistically for the coherency costs
+of performing validation without blocking. A single-threaded database can avoid
+both of those costs, but if you want to scale your system beyond a single
+thread, you will need to perform some form of concurrency control anyway.
+However, you can build databases to be auto-tuning and avoid any concurrency
+control as long as only a single thread is running, and "upgrade" the system
+dynamically when the database is being accessed by multiple threads by
+reconfiguring the concurrency control configuration, and then waiting for any
+threads operating under the old configuration to finish their tasks to avoid
+conflicts. The sled database allows lock-free single-key operations to avoid
+performing any concurrency control usually, but as soon as a single multi-key
+transaction happens, it reconfigures the system to perform concurrency control
+for all operations. This embodies the philosophy of "pay for what you use" and
+avoids paying concurrency control costs for operations that only require
+single-key linearizability, rather than serializability.
+
 Speculation is a key tenant in taking advantage of parallel hardware, because
 it lets us make bets about contention and possibly throw work away if our bet
 didn't pan out.
 
-
 ### the RUM conjecture
+
+[Designing Access Methods: The RUM Conjecture](https://stratos.seas.harvard.edu/files/stratos/files/rum.pdf)
+
+[The Periodic Table of Data Structures](https://stratos.seas.harvard.edu/files/stratos/files/periodictabledatastructures.pdf)
+* 3-way trade-off between read-optimized, write-optimized, and space-optimized
 
 ### scheduling
 
@@ -1343,9 +1372,6 @@ anti-normative-positivism
 
 The Art of Multiprocessor Programming by Maurice Herlihy and Nir Shavit
 
-
-[The Periodic Table of Data Structures](https://stratos.seas.harvard.edu/files/stratos/files/periodictabledatastructures.pdf)
-* 3-way trade-off between read-optimized, write-optimized, and space-optimized
 
 https://doc.rust-lang.org/stable/std/alloc/trait.GlobalAlloc.html
 
