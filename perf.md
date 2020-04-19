@@ -1138,7 +1138,7 @@ of performing validation without blocking. A single-threaded database can avoid
 both of those costs, but if you want to scale your system beyond a single
 thread, you will need to perform some form of concurrency control anyway.
 
-###### Auto-tuning speculation
+###### auto-tuning speculation
 
 However, you can build databases to be auto-tuning and avoid any concurrency
 control as long as only a single thread is running, and "upgrade" the system
@@ -1162,7 +1162,7 @@ of the other threads from needing to throw a lot of work away. We can use cheap
 thread-local variables for tracking contention, and fall-back to more pessimistic
 execution techniques when contention is measured to result in a lot of wasted work.
 
-##### Fairness
+##### fairness
 
 In the above example with 10k threads in a CAS loop on a piece of memory, there
 is a significant chance to introduce unfairness where only a single thread tends
@@ -1189,7 +1189,31 @@ fairness"](https://github.com/Amanieu/parking_lot/blob/4cb93a3268fcf79c823a3d860
 where fairness measures are taken occasionally, which adds a very low amount of
 overhead while achieving a useful amount of fairness in many situations.
 
-### Scheduling
+### scheduling
+
+This section is essentially about multiplexing. Sometimes we want to share some
+physical or logical resource among multiple computational tasks. Maybe we want
+to run multiple operating systems, processes, threads, or async tasks on a
+single CPU.  Or maybe we want to multiplex multiple data streams on a single
+TCP socket, Maybe we want to map some set of files or objects onto some set of
+storage devices.
+
+Our ability to map the appropriate tasks to appropriate computational resources
+will determine how effectively that task can do its job of transforming its own
+computational dependencies into its computational results.
+
+key terms:
+
+* oversubscription
+* interactive workloads
+* batch workloads
+
+Ultimately, if we want to do more work, we can either make our work
+more efficient for getting more done on the computational resources we already
+have, or we can figure out a way to run our work on more hardware. In cases
+where additional computational resources (CPUs, GPUs, disks, memory, etc...)
+are available, it often makes sense to figure out how to use them rather than
+trying to figure out how to better use existing ones.
 
 [Firmament: Fast, Centralized Cluster  Scheduling at
 Scale](https://www.usenix.org/system/files/conference/osdi16/osdi16-gog.pdf)
