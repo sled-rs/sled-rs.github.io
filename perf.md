@@ -143,29 +143,29 @@ Let's kick this shit up! Here's what it's gonna look like...
     * [scheduling](#scheduling)
 * ##### CHAPTER 0b0010: THE MACHINE
   * [computation](#computation)
-  * [hardware effects](#hardware-effects)
-    * [cache](#cache)
-    * [frequency scaling](#frequency-scaling)
-    * [branch misprediction](#branch-misprediction)
-    * [branch target misprediction](#branch-target-misprediction)
-    * [4k aliasing](#4k-aliasing)
-    * [bandwidth saturation](#bandwidth-saturation)
-    * [cache conflicts](#cache-conflicts)
-    * [cache/memory hierarchy bandwidth](#cache/memory-hierarchy-bandwidth)
-    * [data dependencies](#data-dependencies)
-    * [denormal floating point numbers](#denormal-floating-point-numbers)
-    * [DRAM refresh interval](#DRAM-refresh-interval)
-    * [false sharing](#false-sharing)
-    * [hardware prefetching](#hardware-prefetching)
-    * [memory-bound program](#memory-bound-program)
-    * [misaligned accesses](#misaligned-accesses)
-    * [non-temporal stores](#non-temporal-stores)
-    * [software prefetching](#software-prefetching)
-    * [store buffer capacity](#store-buffer-capacity)
-    * [write combining](#write-combining)
   * [threads](#threads)
   * [syscalls](#syscalls)
   * [flash storage](#flash-storage)
+  * [network stacks](#network-stacks)
+  * [cache](#cache)
+  * [frequency scaling](#frequency-scaling)
+  * [branch misprediction](#branch-misprediction)
+  * [branch target misprediction](#branch-target-misprediction)
+  * [4k aliasing](#4k-aliasing)
+  * [bandwidth saturation](#bandwidth-saturation)
+  * [cache conflicts](#cache-conflicts)
+  * [cache/memory hierarchy bandwidth](#cache/memory-hierarchy-bandwidth)
+  * [data dependencies](#data-dependencies)
+  * [denormal floating point numbers](#denormal-floating-point-numbers)
+  * [DRAM refresh interval](#DRAM-refresh-interval)
+  * [false sharing](#false-sharing)
+  * [hardware prefetching](#hardware-prefetching)
+  * [memory-bound program](#memory-bound-program)
+  * [misaligned accesses](#misaligned-accesses)
+  * [non-temporal stores](#non-temporal-stores)
+  * [software prefetching](#software-prefetching)
+  * [store buffer capacity](#store-buffer-capacity)
+  * [write combining](#write-combining)
 * ##### CHAPTER 0b011: ANAL TOOLZ
   * [visualizing time with flamegraphs](#flamegraphs)
   * [modeling CPU behavior with llvm-mca](#llvm-mca)
@@ -894,8 +894,8 @@ execution time.
 
 Parallelism vs concurrency is a trade-off between:
 * scheduler flexibility vs human flexibility
-* independence vs blocking
-*
+* independence vs potential blocking on dependencies
+* imperative vs declarative
 
 One insight is that a sequential, single-threaded execution can be placed
 squarely in the middle of parallelism and concurrency in each of the above
@@ -1236,6 +1236,9 @@ Request-response workloads are often well served by prioritizing work in this or
 
 # CHAPTER 0b0010: THE MACHINE
 
+The goal of this chapter is for readers to walk away feeling dizzy yet
+familiar with how our machines work at a high level.
+
 ## computation
 
 Human-readable code is translated into instructions and data that the CPU will
@@ -1263,11 +1266,18 @@ less attention to hardware friendliness.
 
 This is why we have several levels of caches in front of the main memory.
 
-### cache
+## threads
+
+## syscalls
+
+## flash storage
+
+## network stacks
+
+## cache
 
 This list has been extracted from [Kobzol's wonderful hardware effects GitHub repo](https://github.com/Kobzol/hardware-effects).
 [Ben Titzer - What Spectre Means for Language Implementors](https://www.youtube.com/watch?v=FGX-KD5Nh2g)
-
 
 Further reading:
 
@@ -1276,7 +1286,7 @@ Further reading:
 * https://bartoszmilewski.com/2008/11/05/who-ordered-memory-fences-on-an-x86/
 * https://www.scylladb.com/2017/07/06/scyllas-approach-improve-performance-cpu-bound-workloads/
 
-### frequency scaling
+## frequency scaling
 
 The first thing to know about real CPUs is that they constantly shift their
 frequencies to use less power and generate less heat while meeting demand. This
@@ -1302,39 +1312,23 @@ heavily throttled.
 If you have an Intel CPU, you can use the `i7z` command, to see what your cores
 are currently doing. It is available in most Linux package managers.
 
-### 4k-aliasing
-
-When you read a value that was just written, CPUs will
-
-### bandwidth saturation
-
-### branch misprediction
-
-###
-###
-
-## memory
-### numa
-## threads
-## syscalls
-## filesystems
-## disks
-## networks
-## hardware effects
-
-Modern servers and laptops are
-
-## flamegraphs
-## cachegrind
-## massif
-## dhat
-
-https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html
-https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf
-http://www.brendangregg.com/methodology.html
-http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.html
-http://www.brendangregg.com/offcpuanalysis.html
-https://towardsdatascience.com/an-overview-of-monte-carlo-methods-675384eb1694
+## branch misprediction
+## branch target misprediction
+## 4k aliasing
+## bandwidth saturation
+## cache conflicts
+## cache/memory hierarchy bandwidth
+## data dependencies
+## denormal floating point numbers
+## DRAM refresh interval
+## false sharing
+## hardware prefetching
+## memory-bound program
+## misaligned accesses
+## non-temporal stores
+## software prefetching
+## store buffer capacity
+## write combining
 
 # CHAPTER 0b101: Rust specifics
 
@@ -1580,3 +1574,11 @@ https://github.com/KDAB/hotspot
 - Voltaire
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/CIdXPIN3j38" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html
+https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf
+http://www.brendangregg.com/methodology.html
+http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.html
+http://www.brendangregg.com/offcpuanalysis.html
+https://towardsdatascience.com/an-overview-of-monte-carlo-methods-675384eb1694
+
