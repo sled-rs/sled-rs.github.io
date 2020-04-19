@@ -1073,10 +1073,79 @@ overhead while achieving a useful amount of fairness in many situations.
 
 ### the RUM conjecture
 
-[Designing Access Methods: The RUM Conjecture](https://stratos.seas.harvard.edu/files/stratos/files/rum.pdf)
+When designing access methods for datastructures, databases, systems, etc...
+there exists a 3-way trade-off:
 
-[The Periodic Table of Data Structures](https://stratos.seas.harvard.edu/files/stratos/files/periodictabledatastructures.pdf)
-* 3-way trade-off between read-optimized, write-optimized, and space-optimized
+* **r**ead overhead
+* **u**pdate overhead
+* **m**emory (space) overhead
+
+By choosing to optimize any 2 of the above properties, the third one tends
+to suffer. The way that they suffer can be thought of through either
+contention or cohesion costs.
+
+Let's apply this to an in-memory ordered map:
+
+* **R** + **U**: here, we can trade higher space usage for cheap reads and writes.
+  An immutable, purely-functional tree allows readers and writers to work without
+  contending on a mutex, and space may never be reclaimed.
+* **U** + **M**: we trade slow reads for fast writes and low space.
+  A tree where tree nodes are represented as a linked-list of updates
+  applied to a base node. Writers may simply attach an update to the
+  head of the linked list representing the node. Readers must
+  scan through the list and replace it with a compacted version, freeing
+  the space used by the previous updates and base node, and removing any
+  outdated versions / deleting items that had a tombstone placed in the update list.
+  Readers pay compaction costs, writers procede quickly.
+* **R** + **M**: we trade slow writes for fast reads and low space.
+  This is effectively how classic B-tree databases often work.
+  Writers must take out a lock to update the tree node, and
+  pay the costs associated with cleaning up outdated state.
+  Writers can perform their operations in ways that are more
+  expensive for the writer, but allow readers not to block at all,
+  such as multi-version concurrency control. However, effort
+  needs to be spent (by the writers in this case) to keep
+  overall space usage low and perform more eager garbage
+  collection work to remove unnecessary old versions.
+
+There are many ways to push this work around to achieve desired properties,
+and we can generally be pretty creative in how we do so, but we can't
+be absolutely optimial in all 3 categories.
+
+This trade-off was introduced in the paper [Designing Access Methods: The RUM
+Conjecture](https://stratos.seas.harvard.edu/files/stratos/files/rum.pdf) and
+Mark Callaghan [frequently
+writes](http://smalldatum.blogspot.com/2015/11/read-write-space-amplification-b-tree.html)
+about applying these trade-offs in what he calls "database economics" where
+decisions can be made to optimize for various properties at the expense of
+others.
+
+In Mark's writings, he uses slightly different terminology, and
+also introduces a few other trade-offs that impact database
+workloads:
+* read amplification - how much work a read request performs
+* write amplification - how often data is rewritten to keep overall space low
+* space amplification - how much extra space is used
+
+In many database designs, you can trade write amplification for
+space amplification fairly easily by throttling the amount of
+effort spent performing compaction/defragmentation work. By compacting
+a file, you are spending effort rewriting the data in order to make
+the total space smaller.
+
+This also has [storage endurance
+implications](http://smalldatum.blogspot.com/2019/10/tuning-space-and-write-amplification-to.html)
+where we reduce the total lifespan of the device by performing more writes over
+time.
+
+[Mark also introduces the concept of cache
+amplification](http://smalldatum.blogspot.com/2018/03/cache-amplification.html),
+which he describes as the amount of in-memory overhead there needs
+to be in order to service one read request with at most one disk read.
+
+Another look at these trade-offs has been presented in the paper [The Periodic
+Table of Data
+Structures](https://stratos.seas.harvard.edu/files/stratos/files/periodictabledatastructures.pdf).
 
 ### scheduling
 
