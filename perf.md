@@ -1242,10 +1242,15 @@ familiar with how our machines work at a high level.
 ## computation
 
 Human-readable code is translated into instructions and data that the CPU will
-zip together while executing your program. When a program executes, it refers
-to other memory locations that contain more instructions and data for the CPU to
-fetch, interpret, and combine. Fetching instructions and data from main memory
-takes a really long time.
+zip together while executing your program. Our programs are essentially
+just DSL's for orchestrating syscalls.
+
+When a program executes, it refers
+to other memory locations that contain more instructions and data for the CPU
+to fetch, interpret, and combine. Fetching instructions and data from main
+memory takes a really long time, and by being considerate of how the CPU
+fetches memory and publishes changes, you can sometimes make your code several
+orders of magnitude faster.
 
 Modern CPUs often execute 4 instructions per cycle, and execute over 3 billion
 cycles per second. The time that it takes to retrieve instructions or data from
@@ -1255,6 +1260,10 @@ node).
 That means we can execute 780 instructions in the time that it takes to pull a
 single instruction or byte of data from main memory.
 
+This is why we have several levels of caches in front of the main memory. It
+lets us have quick access to memory that the hardware believes we may need
+to use again.
+
 Lots of people coming to Rust have become a bit fixated on trying to minimize
 the number of instructions that their programs need. But this usually doesn't
 matter so much compared to cache performance. Intel will sometimes recommend
@@ -1263,8 +1272,6 @@ because of their high instruction counts, but because they play nicely with
 prefetchers and branch predictors, the cache is much better utilized, and the
 overall algorithm runs faster than lower instruction sorting algorithms that pay
 less attention to hardware friendliness.
-
-This is why we have several levels of caches in front of the main memory.
 
 ## threads
 
