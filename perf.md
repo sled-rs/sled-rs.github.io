@@ -1002,6 +1002,10 @@ pointer already, the guess about the previous value will be incorrect, and the
 operation will either retry using the new value or it will fail. We will cover
 lock-free and wait-free algorithms in much more detail below.
 
+Speculation is a key tenant in taking advantage of parallel hardware, because
+it lets us make bets about contention and possibly throw work away if our bet
+didn't pan out.
+
 Most modern databases are usually designed to perform transactions using
 optimistic concurrency control. Rather than taking out locks for items involved
 in a transaction, OCC avoids locks but performs a validation step before
@@ -1015,6 +1019,9 @@ blocking contention of acquiring locks pessimistically for the coherency costs
 of performing validation without blocking. A single-threaded database can avoid
 both of those costs, but if you want to scale your system beyond a single
 thread, you will need to perform some form of concurrency control anyway.
+
+###### Auto-tuning speculation
+
 However, you can build databases to be auto-tuning and avoid any concurrency
 control as long as only a single thread is running, and "upgrade" the system
 dynamically when the database is being accessed by multiple threads by
@@ -1027,9 +1034,42 @@ for all operations. This embodies the philosophy of "pay for what you use" and
 avoids paying concurrency control costs for operations that only require
 single-key linearizability, rather than serializability.
 
-Speculation is a key tenant in taking advantage of parallel hardware, because
-it lets us make bets about contention and possibly throw work away if our bet
-didn't pan out.
+Speculation can cause wasted work to happen if the bet being made tends not
+to result in less overall work. For example, if 10000 threads are all trying
+to do a compare and swap on a single item in a tight loop, it will result in only
+a single one of those threads ever succeeding after reading the last successful
+value, and all of the other threads failing to make any progress despite doing work.
+In this case, it may make more sense to just take out a mutex and prevent all
+of the other threads from needing to throw a lot of work away. We can use cheap
+thread-local variables for tracking contention, and fall-back to more pessimistic
+execution techniques when contention is measured to result in a lot of wasted work.
+
+##### Fairness
+
+In the above example with 10k threads in a CAS loop on a piece of memory, there
+is a significant chance to introduce unfairness where only a single thread tends
+to be winning the CAS loops. This is because it takes time for updates to
+memory to propagate to other cores and sockets, and the core where the
+last change happened is the one with the most up-to-date cache. It has
+a significant head-start compared to other threads that need to wait for this
+propagation latency before being able to make a bet in their own CAS attempt.
+
+This is said to be **unfair** because most threads will see very little propress,
+but the previous thread to "win" gets a higher chance to keep winning. This
+can lead to **starvation** where some threads are unable to make as much
+progress.
+
+This has implications for mutexes, among many other things. Modern mutex
+implementations tend to implement some for of fairness-mechanism to combat this
+effect. It can actually be quite expensive to have a mutex be completely fair,
+as it requires maintaining essentially a FIFO queue that mediates access, and
+bending on the FIFO property can lower the effort of using a mutex, which
+reduces contention and overhead. So, fairness can be expensive. But you can use
+tricks to get some fairness for a very low price. For instance, the
+[parking_lot crates implements an idea called "eventual
+fairness"](https://github.com/Amanieu/parking_lot/blob/4cb93a3268fcf79c823a3d860047e3e88c626b51/src/mutex.rs#L20-L35)
+where fairness measures are taken occasionally, which adds a very low amount of
+overhead while achieving a useful amount of fairness in many situations.
 
 ### the RUM conjecture
 
