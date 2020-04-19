@@ -125,20 +125,21 @@ Let's kick this shit up! Here's what it's gonna look like...
 * ##### CHAPTER 0b000: MODELS, MEASUREMENTS AND MINDS
   * [principles](#principles)
   * [metrics: latency, throughput, utilization and saturation](#metrics)
+    * [latency vs throughput](#latency-vs-throughput)
     * [measuring latency](#measuring-latency)
     * [productivity](#productivity)
     * [case study: sled](#sled-case-study)
   * [experimental design](#experimental-design)
     * [experiment checklist](#experiment-checklist)
+  * [e-prime and precise language](#e-prime-and-precise-language)
 * ##### CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
   * [concurrency and parallelism](#concurrency-and-parallelism)
   * [amdahl's law](#amdahls-law)
   * [universal scalability law](#universal-scalability-law)
   * [trade-offs](#trade-offs)
-    * [time vs space](#time-vs-space)
+    * [the RUM conjecture](#the-RUM-conjecture)
     * [memory pressure vs contention](#memory-pressure-vs-contention)
     * [speculation](#speculation)
-    * [the RUM conjecture](#the-RUM-conjecture)
     * [scheduling](#scheduling)
 * ##### CHAPTER 0b0010: THE MACHINE
   * [computation](#computation)
@@ -313,6 +314,8 @@ Some other important general-purpose metrics are:
   next request to arrive.
 * saturation - the extent to which requests must queue before being handled
   by the system, usually measured in terms of queue depth (length).
+
+### latency vs throughput
 
 Latency and throughput considerations are often in direct contradiction with
 each other. If we want to optimize the throughput of a server, we want to
@@ -803,6 +806,50 @@ Further reading:
 * [Producing Wrong Data Without Doing Anything Obviously Wrong! - ASPLOS 2009](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
 * [ASPLOS 13 - STABILIZER: Statistically Sound Performance Evaluation - ASPLOS 2013](https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf)
 
+## e-prime and precise language
+
+So many aspects of performance-critical engineering can be highly contextual
+and may vary wildly from one machine to another. It helps to avoid the verb
+"to be" and its conjugations "is", "are" etc... when describing observations.
+
+Don't say "lock-free queues are faster than mutex-backed queues", say "on
+hardware H with T threads running in tight loops performing operations O, our
+specific lock-free queue has been measured to achieve a latency distribution of
+L1 and our specicific mutex-backed queue has been measured to achieve a latency
+distribution of L2." It's likely your lock-free queue will sometimes perform
+worse than a well-made mutex-backed queue given certain hardware, contention
+and many other factors.
+
+When we say something "is" something else, we are casually equating two
+similar things for convenience purposes, and we are lying to some extent.
+By avoiding false equivalences (usually easily spotted through use of "is", "are" etc...)
+we can both communicate more precisely and we can allow ourselves to reason
+about complexity far more effectively. Situations that may seem completely
+ambiguous when described using "to be" phrases are often quite unambiguous
+when taking care to avoid false equivalences. This general form of speech
+is known as [E-Prime](https://en.wikipedia.org/wiki/E-Prime).
+
+When we speak about comparative metrics, it is also important to avoid saying
+commonly misunderstood things like "workload A is 15% slower than workload B".
+Instead of saying "faster" it is helpful to speak in terms of latency or
+throughput, because both may be used to describe "speed" but they are in
+[direct opposition to each other](#latency-vs-throughput). Speaking
+in terms of relative percentages is often misleading. What does
+A (90) is 10% lower than B(100) mean if we don't know their actual
+values? Many people would think that B is `1.1 * A`, but in this case,
+`1.1 * 90 = 99`. It is generally better to describe comparative measurements
+in terms of ratios rather than relative percentages.
+
+The phrase `workload A is 20% slower than workload B` can be more clearly said
+as `workload A was measured to have a throughput of 4:5 that of workload B`.
+Even though many people will see that and immediately translate it to "80%" in
+their heads, the chances of improperly reasoning about the difference are
+lower.
+
+When we make our communications less ambiguous, we can spend more time speeding
+things up based on clarified mental models. The time we spend can be better
+spent because it can be more precisely targeted.
+
 # CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
 
 ## concurrency and parallelism
@@ -945,11 +992,82 @@ Further reading:
 
 ## trade-offs
 
-### time vs space
+### the RUM conjecture
 
-We already discussed some important relationships between latency, throughput,
-utilization and saturation in the [metrics](#metrics) section above, but we may
-also trade each of those off for space in many cases.
+When designing access methods for datastructures, databases, systems, etc...
+there exists a 3-way trade-off:
+
+* **r**ead overhead
+* **u**pdate overhead
+* **m**emory (space) overhead
+
+By choosing to optimize any 2 of the above properties, the third one tends
+to suffer. The way that they suffer can be thought of through either
+contention or cohesion costs.
+
+Let's apply this to an in-memory ordered map:
+
+* **R** + **U**: here, we can trade higher space usage for cheap reads and writes.
+  An immutable, purely-functional tree allows readers and writers to work without
+  contending on a mutex, and space may never be reclaimed.
+* **U** + **M**: we trade slow reads for fast writes and low space.
+  A tree where tree nodes are represented as a linked-list of updates
+  applied to a base node. Writers may simply attach an update to the
+  head of the linked list representing the node. Readers must
+  scan through the list and replace it with a compacted version, freeing
+  the space used by the previous updates and base node, and removing any
+  outdated versions / deleting items that had a tombstone placed in the update list.
+  Readers pay compaction costs, writers procede quickly.
+* **R** + **M**: we trade slow writes for fast reads and low space.
+  This is effectively how classic B-tree databases often work.
+  Writers must take out a lock to update the tree node, and
+  pay the costs associated with cleaning up outdated state.
+  Writers can perform their operations in ways that are more
+  expensive for the writer, but allow readers not to block at all,
+  such as multi-version concurrency control. However, effort
+  needs to be spent (by the writers in this case) to keep
+  overall space usage low and perform more eager garbage
+  collection work to remove unnecessary old versions.
+
+There are many ways to push this work around to achieve desired properties,
+and we can generally be pretty creative in how we do so, but we can't
+be absolutely optimial in all 3 categories.
+
+This trade-off was introduced in the paper [Designing Access Methods: The RUM
+Conjecture](https://stratos.seas.harvard.edu/files/stratos/files/rum.pdf) and
+Mark Callaghan [frequently
+writes](http://smalldatum.blogspot.com/2015/11/read-write-space-amplification-b-tree.html)
+about applying these trade-offs in what he calls "database economics" where
+decisions can be made to optimize for various properties at the expense of
+others.
+
+In Mark's writings, he uses slightly different terminology, and
+also introduces a few other trade-offs that impact database
+workloads:
+* read amplification - how much work a read request performs
+* write amplification - how often data is rewritten to keep overall space low
+* space amplification - how much extra space is used
+
+In many database designs, you can trade write amplification for
+space amplification fairly easily by throttling the amount of
+effort spent performing compaction/defragmentation work. By compacting
+a file, you are spending effort rewriting the data in order to make
+the total space smaller.
+
+This also has [storage endurance
+implications](http://smalldatum.blogspot.com/2019/10/tuning-space-and-write-amplification-to.html)
+where we reduce the total lifespan of the device by performing more writes over
+time.
+
+[Mark also introduces the concept of cache
+amplification](http://smalldatum.blogspot.com/2018/03/cache-amplification.html),
+which he describes as the amount of in-memory overhead there needs
+to be in order to service one read request with at most one disk read.
+
+Another look at these trade-offs has been presented in the paper [The Periodic
+Table of Data
+Structures](https://stratos.seas.harvard.edu/files/stratos/files/periodictabledatastructures.pdf).
+
 
 ### memory pressure vs contention
 
@@ -1071,85 +1189,12 @@ fairness"](https://github.com/Amanieu/parking_lot/blob/4cb93a3268fcf79c823a3d860
 where fairness measures are taken occasionally, which adds a very low amount of
 overhead while achieving a useful amount of fairness in many situations.
 
-### the RUM conjecture
+### Scheduling
 
-When designing access methods for datastructures, databases, systems, etc...
-there exists a 3-way trade-off:
+[Firmament: Fast, Centralized Cluster  Scheduling at
+Scale](https://www.usenix.org/system/files/conference/osdi16/osdi16-gog.pdf)
 
-* **r**ead overhead
-* **u**pdate overhead
-* **m**emory (space) overhead
-
-By choosing to optimize any 2 of the above properties, the third one tends
-to suffer. The way that they suffer can be thought of through either
-contention or cohesion costs.
-
-Let's apply this to an in-memory ordered map:
-
-* **R** + **U**: here, we can trade higher space usage for cheap reads and writes.
-  An immutable, purely-functional tree allows readers and writers to work without
-  contending on a mutex, and space may never be reclaimed.
-* **U** + **M**: we trade slow reads for fast writes and low space.
-  A tree where tree nodes are represented as a linked-list of updates
-  applied to a base node. Writers may simply attach an update to the
-  head of the linked list representing the node. Readers must
-  scan through the list and replace it with a compacted version, freeing
-  the space used by the previous updates and base node, and removing any
-  outdated versions / deleting items that had a tombstone placed in the update list.
-  Readers pay compaction costs, writers procede quickly.
-* **R** + **M**: we trade slow writes for fast reads and low space.
-  This is effectively how classic B-tree databases often work.
-  Writers must take out a lock to update the tree node, and
-  pay the costs associated with cleaning up outdated state.
-  Writers can perform their operations in ways that are more
-  expensive for the writer, but allow readers not to block at all,
-  such as multi-version concurrency control. However, effort
-  needs to be spent (by the writers in this case) to keep
-  overall space usage low and perform more eager garbage
-  collection work to remove unnecessary old versions.
-
-There are many ways to push this work around to achieve desired properties,
-and we can generally be pretty creative in how we do so, but we can't
-be absolutely optimial in all 3 categories.
-
-This trade-off was introduced in the paper [Designing Access Methods: The RUM
-Conjecture](https://stratos.seas.harvard.edu/files/stratos/files/rum.pdf) and
-Mark Callaghan [frequently
-writes](http://smalldatum.blogspot.com/2015/11/read-write-space-amplification-b-tree.html)
-about applying these trade-offs in what he calls "database economics" where
-decisions can be made to optimize for various properties at the expense of
-others.
-
-In Mark's writings, he uses slightly different terminology, and
-also introduces a few other trade-offs that impact database
-workloads:
-* read amplification - how much work a read request performs
-* write amplification - how often data is rewritten to keep overall space low
-* space amplification - how much extra space is used
-
-In many database designs, you can trade write amplification for
-space amplification fairly easily by throttling the amount of
-effort spent performing compaction/defragmentation work. By compacting
-a file, you are spending effort rewriting the data in order to make
-the total space smaller.
-
-This also has [storage endurance
-implications](http://smalldatum.blogspot.com/2019/10/tuning-space-and-write-amplification-to.html)
-where we reduce the total lifespan of the device by performing more writes over
-time.
-
-[Mark also introduces the concept of cache
-amplification](http://smalldatum.blogspot.com/2018/03/cache-amplification.html),
-which he describes as the amount of in-memory overhead there needs
-to be in order to service one read request with at most one disk read.
-
-Another look at these trade-offs has been presented in the paper [The Periodic
-Table of Data
-Structures](https://stratos.seas.harvard.edu/files/stratos/files/periodictabledatastructures.pdf).
-
-### scheduling
-
-Request-response workloads are well served by prioritizing work in this order:
+Request-response workloads are often well served by prioritizing work in this order:
 
 * first run things that are ready to write, as they signify work that is
   finished
