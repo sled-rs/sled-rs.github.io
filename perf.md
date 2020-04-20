@@ -1589,3 +1589,17 @@ http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.htm
 http://www.brendangregg.com/offcpuanalysis.html
 https://towardsdatascience.com/an-overview-of-monte-carlo-methods-675384eb1694
 
+ ```
+ The computer is so powerful and so useful
+ because it has eliminated many of the
+ physical constraints of electromechanical
+ devices. This is both its blessing and its
+ curse: We do not have to worry about the
+ physical realization of our software designs,
+ but we also no longer have physical laws the
+ limit the complexity of these designs—the latter
+ could be called the curse of flexibility
+ - Nancy Leveson, 1995
+ ```
+
+[A New Accident Model for Engineering Safer Systems](http://sunnyday.mit.edu/accidents/safetyscience-single.pdf)
