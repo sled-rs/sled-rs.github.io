@@ -1688,8 +1688,56 @@ source: https://mechanical-sympathy.blogspot.com/2011/09/single-writer-principle
   </tr>
 </table>
 
+https://mechanical-sympathy.blogspot.com/2011/07/memory-barriersfences.html
+* each cpu core has 6 execution units that can execute instructions in parallel
+* execution units access registers
+* execution units read from load buffers and write to store buffers
+* load and store buffers interact with the L1 cache
+* store buffers feed into the write combining buffer
+* the write combining buffer feeds into the L2 cache
+* the load and store buffers can be read from efficiently
+* reads will access the buffers first, avoiding cache if possible
+* barriers guarantee the visibility ordering to other cores
+* barriers propagate data in-order to the cache subsystem
+* store barriers push all data into the L1 cache
+* load barriers wait for all in-progress loads to complete before the next loads happen
+* full barriers combine load and store barriers
+* it is better to "batch" ordered work as much as possible to reduce barrier overhead
+
+https://mechanical-sympathy.blogspot.com/2011/07/false-sharing.html
+* to modify memory, your core needs to acquire exclusive access for the cacheline
+* this may involve going through the l3 cache (or worse) to invalidate the previous owner
+* multiple pieces of data may share the same cache line, which makes it impossible
+  to make progress in parallel
+* good graph showing false sharing [REPLICATE THIS IN RUST]
+
+https://mechanical-sympathy.blogspot.com/2013/02/cpu-cache-flushing-fallacy.html
+* MESIF - to write, a RFO must happen that invalidates other copies
+* cache coherency traffic is on its own bus
+* cache controller is a module on each L3 cache segment
+  * connected to on-socket ring-bus network
+  * sockets are connected to each other via this ring-bus network as well
+  * everything shares this ring-bus network
+    * cores
+    * L3 cache segments
+    * QPI/hypertransport controller (links sockets)
+    * memory controller
+    * integrated graphics subsystem
+  * the ring-bus network has 4 lanes
+    * request
+    * snoop
+    * acknowledge
+    * 32-bytes data per cycle
+* l3 cache is inclusive of l1/l2
+  * facilitates identification of which core has copies of which cachelines
+* read request from a core goes to the ring bus
+  * will read from main memory if uncached
+  * will read from l3 if clean
+  * will snoop from another core if modified
+  * the returned read will never be stale
+* TLB may need to be flushed depending on the address indexing policy on a context switch
+
 https://stackoverflow.com/questions/54876208/size-of-store-buffers-on-intel-hardware-what-exactly-is-a-store-buffer/54880249#54880249
-
 https://nicknash.me/2018/04/07/speculating-about-store-buffer-capacity/
-
+https://preshing.com/20120930/weak-vs-strong-memory-models/
 http://www.1024cores.net/home/parallel-computing/cache-oblivious-algorithms
