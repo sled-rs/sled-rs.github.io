@@ -1603,3 +1603,93 @@ https://towardsdatascience.com/an-overview-of-monte-carlo-methods-675384eb1694
  ```
 
 [A New Accident Model for Engineering Safer Systems](http://sunnyday.mit.edu/accidents/safetyscience-single.pdf)
+
+https://mechanical-sympathy.blogspot.com/2013/08/lock-based-vs-lock-free-concurrent.html
+* graphs showing lock-free is fast
+
+https://www.real-logic.co.uk/training.html
+* syllabus for concurrent programming
+
+https://mechanical-sympathy.blogspot.com/2011/08/inter-thread-latency.html
+* avoiding memory barriers via batching
+
+https://mechanical-sympathy.blogspot.com/2011/07/write-combining.html
+* memory buffers are like unchained hash maps w/ 64-byte buckets (cachelines)
+* cachelines have 64-bit bitmap that records dirtiness
+* cacheline is the unit of memory transfer
+* evicting the previous tenant causes write-back, maybe all the way to dram
+* storing data means writing to L1, but if it's not there, need to do RFO
+* when going to L2, the CPU performs a request for ownership
+* until the RFO completes, the CPU stores the item to be written in a
+  cacheline-sized buffer among the "line fill buffers"
+* these buffers hold speculative stores until the cacheline can be acquired
+* the biggest benefit happens here when the longest delays happen: getting from DRAM
+* if multiple writes happen to the same cacheline, they can happen on the same buffer
+* reads will also snoop this buffer first
+* on some intel chips, there are 4 line fill buffers (on my laptop this is 8, see code)
+* this means that if we write to more than 4 separate cachelines in a loop, it slows down
+* with hyperthreading, there is more competition for these same buffers
+
+
+https://mechanical-sympathy.blogspot.com/2012/08/memory-access-patterns-are-important.html
+* cache access latencies are ~1ns, ~4ns, ~15ns
+* caches are effectively hash tables with a fixed number of slots for each hash value
+  * called "ways", 8-way = 8-slots per hash value
+* these each store 64 bytes, pulled in adjacently
+* memory gets evicted in LRU order
+* on eviction, memory gets written back, possibly all the way back to dram
+* each level of cache includes TLB mappings for virtual memory, 4k or 2mb pages
+* prefetching tends to access cache lines when accessed 2kb or less fixed stride apart
+* when we hit DRAM, memory is arranged in rows that are 4k (a page) wide. the entire
+  page is loaded into a row buffer. it has a queue that reorders requests to
+  the same page so that they can share the work of pulling a page into a row
+  buffer.
+* with NUMA, each hop adds 20ns to access times. on an 8-socket system, memory
+  may be 3 hops away.
+
+https://mechanical-sympathy.blogspot.com/2011/09/single-writer-principle.html
+* optimism can cause effective queuing effects just like locking
+* managing contention vs real work
+* message passing and letting threads do work without memory barriers is nice
+
+Incrementing a 64-bit counter 500 million times using a variety of techniques on a 2.4Ghz Westmere processor.
+source: https://mechanical-sympathy.blogspot.com/2011/09/single-writer-principle.html
+
+(REPLICATE THIS IN RUST)
+
+<table style="width:100%">
+  <tr>
+    <td> method </td>
+    <td> time(ms) </td>
+  </tr>
+  <tr>
+    <td>one thread</td>
+    <td>300</td>
+  </tr>
+  <tr>
+    <td>one thread + memory barrier</td>
+    <td>4,700</td>
+  </tr>
+  <tr>
+    <td>one thread with CAS</td>
+    <td>5,700</td>
+  </tr>
+  <tr>
+    <td>two threads with CAS</td>
+    <td>18,000</td>
+  </tr>
+  <tr>
+    <td>one thread with lock</td>
+    <td>10,000</td>
+  </tr>
+  <tr>
+    <td>two threads with a lock</td>
+    <td>118,000</td>
+  </tr>
+</table>
+
+https://stackoverflow.com/questions/54876208/size-of-store-buffers-on-intel-hardware-what-exactly-is-a-store-buffer/54880249#54880249
+
+https://nicknash.me/2018/04/07/speculating-about-store-buffer-capacity/
+
+http://www.1024cores.net/home/parallel-computing/cache-oblivious-algorithms
