@@ -20,6 +20,10 @@ the project.
 
 <a target="_blank"  href="https://www.amazon.com/gp/product/0262533693/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0262533693&linkCode=as2&tag=tylerneely06-20&linkId=3268b7d6f43c5d8c29a4855ac5c3f5f6"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=0262533693&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=0262533693" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
 
+## Handbook of Model Checking
+
+<a target="_blank"  href="https://www.amazon.com/gp/product/3319105744/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=3319105744&linkCode=as2&tag=tylerneely06-20&linkId=5bfc4620c24711908f25ac9987d044e6"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=3319105744&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=3319105744" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
+
 ## Why Programs Fail
 
 <a target="_blank"  href="https://www.amazon.com/gp/product/0123745152/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0123745152&linkCode=as2&tag=tylerneely06-20&linkId=b5111e54ec0283e4a7ce27f5154a31f5"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=0123745152&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=0123745152" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
