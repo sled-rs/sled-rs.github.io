@@ -122,3 +122,6 @@ concurrent behavior mechanically.
 1. run a workload, observing how it uses external resources like the network or files
 1. the order that the system
 
+[Some thoughts on security after ten years of qmail 1.0](https://cr.yp.to/qmail/qmailsec-20071101.pdf)
+
+[How SQLite Is Tested](https://www.sqlite.org/testing.html)
