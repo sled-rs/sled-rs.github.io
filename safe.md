@@ -10,9 +10,10 @@ database.
 
 We discuss the following claims and how we set out to build confidence in them:
 
-* lineariazable single-key concurrent operations
-* serializable multi-key concurrent transactions
-* space amplification of 3x under non-concurrent workloads
+* data loss
+* inconsistent (non-linearizable) data access
+* process crash
+* resource exhaustion
 
 outline:
 * [databases are hard](#databases-are-hard)
@@ -91,10 +92,16 @@ have failed us.
 The correctness of sled depends on our ability to test its file usage and
 concurrent behavior mechanically.
 
-## sled guarantees
+## losses
+
+We wish to prevent the following undesirable situations:
+
+* data loss
+* inconsistent (non-linearizable) data access
+* process crash
+* resource exhaustion
 
 <a target="_blank"  href="https://www.amazon.com/gp/product/1558605088/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=1558605088&linkCode=as2&tag=tylerneely06-20&linkId=a7a9012b79d64e3b0f269ca672ca7fe4"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=1558605088&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=1558605088" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
-
 
 ## safety is emergent behavior
 
@@ -102,9 +109,30 @@ concurrent behavior mechanically.
 
 [A New Accident Model for Engineering Safer Systems](http://sunnyday.mit.edu/accidents/safetyscience-single.pdf)
 
-[A comprehensive safety engineering approach for software-intensive systems based on STPA](https://arxiv.org/pdf/1612.03109.pdf)
-
 ## hazards
+
+These hazards can result in the above losses:
+
+* data may be lost if
+  * bugs in the logging system
+    * `Db::flush` fails to make previous writes durable
+  * bugs in the GC system
+    * the old location is overwritten before the defragmented location becomes durable
+  * bugs in the recovery system
+  * hardare failures
+* consistency violations may be caused by
+  * transaction concurrency control failure to enforce linearizability (strict serializability)
+  * non-linearizable lock-free single-key operations
+*
+* panic
+* persistent storage exceeding (2 + N concurrent writers) * logical data size
+* in-memory cache exceeding the configured cache size
+* use-after-free
+* data race
+* memory leak
+* integer overflow
+* buffer overrun
+* uninitialized memory access
 
 ## constraints
 
@@ -114,7 +142,7 @@ concurrent behavior mechanically.
 <a target="_blank"  href="https://www.amazon.com/gp/product/3319105744/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=3319105744&linkCode=as2&tag=tylerneely06-20&linkId=5bfc4620c24711908f25ac9987d044e6"><img border="0" src="//ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&MarketPlace=US&ASIN=3319105744&ServiceVersion=20070822&ID=AsinImage&WS=1&Format=_SL250_&tag=tylerneely06-20" ></a><img src="//ir-na.amazon-adsystem.com/e/ir?t=tylerneely06-20&l=am2&o=1&a=3319105744" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" />
 
 [Experiences with QuickCheck:Testing the Hard Stuff and Staying Sane](https://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quviq-testing.pdf)
-
+[A comprehensive safety engineering approach for software-intensive systems based on STPA](https://arxiv.org/pdf/1612.03109.pdf)
 [Learn TLA+](https://learntla.com/introduction/example/)
 
 ## lineage-driven fault injection
