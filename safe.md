@@ -102,6 +102,8 @@ concurrent behavior mechanically.
 
 [A New Accident Model for Engineering Safer Systems](http://sunnyday.mit.edu/accidents/safetyscience-single.pdf)
 
+[A comprehensive safety engineering approach for software-intensive systems based on STPA](https://arxiv.org/pdf/1612.03109.pdf)
+
 ## hazards
 
 ## constraints
@@ -125,3 +127,24 @@ concurrent behavior mechanically.
 [Some thoughts on security after ten years of qmail 1.0](https://cr.yp.to/qmail/qmailsec-20071101.pdf)
 
 [How SQLite Is Tested](https://www.sqlite.org/testing.html)
+
+[Optimal Stateless Model Checking under the Release-Acquire Semantics](https://arxiv.org/pdf/1808.00843.pdf)
+* Abdulla's response to below
+
+[Effective Stateless Model Checking for C/C++ Concurrency](https://plv.mpi-sws.org/rcmc/paper.pdf)
+* response to CDSChecker & Nidhugg
+
+[Source Sets: A Foundation for Optimal Dynamic Partial Order Reduction](http://user.it.uu.se/~parosh/publications/papers/jacm17.pdf)
+* Abdulla (Nidhugg) describes a very nice DPOR
+
+[CDSCHECKER:  Checking  Concurrent  Data Structures  Written  with  C/C++  Atomics](http://demsky.eecs.uci.edu/publications/c11modelcheck.pdf)
+
+[Principles of Model Checking](http://is.ifmo.ru/books/_principles_of_model_checking.pdf)
+* MIT book, simpler than "Handbook of Model Checking"
+
+###### STAMP resources
+* [A New Accident Model for Engineering Safer Systems](http://sunnyday.mit.edu/accidents/safetyscience-single.pdf)
+* [STPA Handbook](http://psas.scripts.mit.edu/home/get_file.php?name=STPA_handbook.pdf)
+* [CAST Handbook: How to Learn More from Incidents and Accidents](http://psas.scripts.mit.edu/home/get_file4.php?name=CAST_handbook.pdf)
+* [Engineering a Safer World](https://www.dropbox.com/s/dwl3782mc6fcjih/8179.pdf?dl=1)
+* [STAMP Publications](http://sunnyday.mit.edu/STAMP-publications-sorted.pdf)
