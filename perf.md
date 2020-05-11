@@ -14,7 +14,7 @@ WARNING: Viewer discretion is advised.
 * your engineers will burn out, leave your team, and relentlessly shit talk you
   if they don't make their code pretty
 * align all latency-throughput queuing positions for everything in the
-  serial dependency graph, or you will get the worst of all worlds
+  serial dependency graph, or you will get worst-of-all-worlds
   latency-throughput behavior, increasing latency and lowering throughput
 * if something necessary can be done in the background without blocking,
   queue it up for eventual batch processing to improve cache performance
@@ -483,6 +483,19 @@ Further reading:
 
 ### productivity
 
+ ```
+ The computer is so powerful and so useful
+ because it has eliminated many of the
+ physical constraints of electromechanical
+ devices. This is both its blessing and its
+ curse: We do not have to worry about the
+ physical realization of our software designs,
+ but we also no longer have physical laws the
+ limit the complexity of these designs—the latter
+ could be called the curse of flexibility
+ - Nancy Leveson, 1995
+ ```
+
 One of the most frequently overlooked performance metrics is the cognitive
 complexity of a codebase. If engineers experience high friction when trying to
 change a codebase, all efforts to make the code faster will be dramatically
@@ -756,7 +769,9 @@ high-level metric.
 
 ### experiment checklist
 
-Here are two nice checklists from Raj Jain's The Art of Computer Systems Performance Analysis:
+Here are two nice checklists from Raj Jain's [The Art of Computer Systems
+Performance
+Analysis](https://www.amazon.com/gp/product/0471503363/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0471503363&linkCode=as2&tag=tylerneely06-20&linkId=0d675f8c937657c859d970d48e81ca87):
 
 Box 2.1 Checklist for Avoiding Common Mistakes in Performance Evaluation
 
@@ -799,9 +814,8 @@ Box 2.2 Steps for a Performance Evaluation Study
 
 Further reading:
 
+* [Performance Analysis Methodology](http://www.brendangregg.com/methodology.html)
 * [Five ways not to fool yourself](https://timharris.uk/misc/five-ways.pdf)
-* The Art of Computer Systems Performance Analysis by Raj Jain
-* A Guide to Experimental Algorithmics by Catherine C McGeoch
 * [How Not to Measure Computer System Performance](https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html)
 * [Producing Wrong Data Without Doing Anything Obviously Wrong! - ASPLOS 2009](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
 * [ASPLOS 13 - STABILIZER: Statistically Sound Performance Evaluation - ASPLOS 2013](https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf)
@@ -857,9 +871,9 @@ spent because it can be more precisely targeted.
 * **parallelism** is when a task may execute independently of other things
 * **concurrency** is when a task may be paused until some dependency is satisfied
 
-This definition may feel a bit strange to most people. After all, isn't
-concurrency when we are spinning up lots of things that will run at once, like
-a new thread or async task?
+This concurrency definition may feel a bit strange to most people. After all,
+isn't concurrency when we are spinning up lots of things that will run at once,
+like a new thread or async task?
 
 When we describe our concurrent programs, we are usually writing a lot of code
 that relates to finding out what happened somewhere else, getting some
@@ -1087,6 +1101,23 @@ avoid destroying and freeing the previous version while readers may still be
 accessing it, either by using a garbage collected language, atomic reference
 counters, or something like hazard pointers or epoch-based reclamation.
 
+In Rust, we have the
+[`Arc::make_mut`](https://doc.rust-lang.org/std/sync/struct.Arc.html#method.make_mut)
+method which will look at the reference count, and either provide a mutable
+reference (if the count is 1) or make a clone and return a mutable reference to
+that. We can use a `RwLock<Arc<T>>` to get a mutable reference to the `Arc`,
+and either apply mutations without blocking existing readers. This "snapshot
+readers" pattern is another point in the contention-memory pressure spectrum.
+Readers take a reader lock and clone the `Arc` before dropping it, giving them
+access to an immutable "snapshot". Writers take a writer lock and call
+`Arc::make_mut` on it to then mutate the `Arc` that exists inside the `RwLock`,
+blocking the next group of readers and writers until its mutation is done.
+
+The compiler will make all kinds of copies of our constant data at compile-time
+and inline the constants into code to reduce cache misses during runtime.
+Data that never changes can be aggressively copied and cached without fear
+of invalidation.
+
 ### speculation
 
 While things like speculative execution have gotten kind of a bad rap due to
@@ -1194,7 +1225,7 @@ overhead while achieving a useful amount of fairness in many situations.
 This section is essentially about multiplexing. Sometimes we want to share some
 physical or logical resource among multiple computational tasks. Maybe we want
 to run multiple operating systems, processes, threads, or async tasks on a
-single CPU.  Or maybe we want to multiplex multiple data streams on a single
+single CPU. Or maybe we want to multiplex multiple data streams on a single
 TCP socket, Maybe we want to map some set of files or objects onto some set of
 storage devices.
 
@@ -1215,10 +1246,18 @@ where additional computational resources (CPUs, GPUs, disks, memory, etc...)
 are available, it often makes sense to figure out how to use them rather than
 trying to figure out how to better use existing ones.
 
-[Firmament: Fast, Centralized Cluster  Scheduling at
-Scale](https://www.usenix.org/system/files/conference/osdi16/osdi16-gog.pdf)
+In [Parallel Disk IO](http://www.1024cores.net/home/scalable-architecture/parallel-disk-io),
+Dmitry Vyukov goes into some nice things to keep in mind while building a scheduler.
+In general, you should be mindful of the way that work is queued up in your system,
+because using things like FIFO queues will guarantee that cache locality gets
+worse as the queues fill up. Using a stack instead of a FIFO will generally
+help to improve cache locality for both work items and threads that are
+woken to perform work.
 
-Request-response workloads are often well served by prioritizing work in this order:
+Crucially, Dmitry points out that work should be prioritized in a way
+that is mindful of the state of completion of a particular task.
+If you are building a service that responds to requests, you probably
+want to prioritize work in this way:
 
 * first run things that are ready to write, as they signify work that is
   finished
@@ -1233,6 +1272,55 @@ Request-response workloads are often well served by prioritizing work in this or
   you want a smaller TCP backlog that will fill up and provide backpressure for
   your load balancer so it can do its job.
 
+The general idea is to keep the pipeline busy, but favoring work toward
+the end of the pipeline as they will free resources when they complete,
+reducing overall system load and increasing responsiveness by reducing
+queue depths.
+
+In [Task Scheduling Strategies](http://www.1024cores.net/home/scalable-architecture/task-scheduling-strategies),
+Dmitry mentions some trade-offs between work-stealing and other approaches.
+
+**Work stealing** is when threads have their own work queues, but they
+will try to steal work from other threads when they run out of work
+to do. This imposes coordination costs because threads need to
+synchronize access to their queues with threads that may steal from
+them. It also imposes cache locality hits because it might take
+work from a thread with the data in a closer cache and forces
+a stealing thread to pay more cacheline retrieval costs to
+work with the stolen data.
+
+Dmitry recommends that most general-purpose schedulers use work-stealing
+due to the downsides being not too bad in most cases, but he points out
+that in some situations where you are scheduling small computational work
+(cough cough Rust async tasks) you may want to use an Erlang-style
+**work-balancing** strategy that has perfect knowledge of the progress
+that various threads are making, and from a centralized position
+performing rebalancing work.
+
+There are also two other forms of work balancing:
+* **work requesting** is when a thread that runs out of work
+  makes a request to a thread with work to give it over. This
+  allows threads to avoid synchronizing access to their own queues,
+  which can significantly speed up their own consumption. But
+  it increases the latency that threads sit idle before having
+  work given to them by the threads with excess work. And it
+  imposes some extra work on the giving side at the time of
+  hand-off, which may or may not be worse than the consumption
+  benefits, depending on the workload.
+* **work balancing** is when you distribute work onto
+  a set of threads that may not have enough work to do.
+
+In scheduling research, there is a quest to try to build
+systems that are able to make the best decisions for various
+workloads. It is not possible to build a scheduler that
+is optimal for all use cases. There are many latency-throughput,
+contention vs space, fairness, centralized optimality vs
+distributed throughput trade-offs to be made.
+
+If you want to dig in deeper, this distributed scheduling
+paper made a lot of waves in 2016 and comes to some nice
+conclusions: [Firmament: Fast, Centralized Cluster Scheduling at
+Scale](https://www.usenix.org/system/files/conference/osdi16/osdi16-gog.pdf).
 
 # CHAPTER 0b0010: THE MACHINE
 
@@ -1242,8 +1330,7 @@ familiar with how our machines work at a high level.
 ## computation
 
 Human-readable code is translated into instructions and data that the CPU will
-zip together while executing your program. Our programs are essentially
-just DSL's for orchestrating syscalls.
+zip together while executing your program.
 
 When a program executes, it refers
 to other memory locations that contain more instructions and data for the CPU
@@ -1277,11 +1364,168 @@ less attention to hardware friendliness.
 
 ## syscalls
 
+In a sense, our programs are essentially just DSL's for orchestrating syscalls.
+Kernels do most of the interesting heavy-lifting when it comes to IO,
+and it's our job as authors of programs that run on top of kernels to stay
+out of the kernel's way as much as possible.
+
+http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.html
+
 ## flash storage
+
+Our new flash-based storage devices behave differently from the spinning
+disks of the past. Instead of needing to drag a physical spindle from one location
+to another (taking several milliseconds to get there) our flash storage
+has no moving parts. Every 32mb or so will end up on a different
+chip inside the drive. Data is
 
 ## network stacks
 
 ## cache
+
+https://mechanical-sympathy.blogspot.com/2013/08/lock-based-vs-lock-free-concurrent.html
+* graphs showing lock-free is fast
+
+https://www.real-logic.co.uk/training.html
+* syllabus for concurrent programming
+
+https://mechanical-sympathy.blogspot.com/2011/08/inter-thread-latency.html
+* avoiding memory barriers via batching
+
+https://mechanical-sympathy.blogspot.com/2011/07/write-combining.html
+* memory buffers are like unchained hash maps w/ 64-byte buckets (cachelines)
+* cachelines have 64-bit bitmap that records dirtiness
+* cacheline is the unit of memory transfer
+* evicting the previous tenant causes write-back, maybe all the way to dram
+* storing data means writing to L1, but if it's not there, need to do RFO
+* when going to L2, the CPU performs a request for ownership
+* until the RFO completes, the CPU stores the item to be written in a
+  cacheline-sized buffer among the "line fill buffers"
+* these buffers hold speculative stores until the cacheline can be acquired
+* the biggest benefit happens here when the longest delays happen: getting from DRAM
+* if multiple writes happen to the same cacheline, they can happen on the same buffer
+* reads will also snoop this buffer first
+* on some intel chips, there are 4 line fill buffers (on my laptop this is 8, see code)
+* this means that if we write to more than 4 separate cachelines in a loop, it slows down
+* with hyperthreading, there is more competition for these same buffers
+
+
+https://mechanical-sympathy.blogspot.com/2012/08/memory-access-patterns-are-important.html
+* cache access latencies are ~1ns, ~4ns, ~15ns
+* caches are effectively hash tables with a fixed number of slots for each hash value
+  * called "ways", 8-way = 8-slots per hash value
+* these each store 64 bytes, pulled in adjacently
+* memory gets evicted in LRU order
+* on eviction, memory gets written back, possibly all the way back to dram
+* each level of cache includes TLB mappings for virtual memory, 4k or 2mb pages
+* prefetching tends to access cache lines when accessed 2kb or less fixed stride apart
+* when we hit DRAM, memory is arranged in rows that are 4k (a page) wide. the entire
+  page is loaded into a row buffer. it has a queue that reorders requests to
+  the same page so that they can share the work of pulling a page into a row
+  buffer.
+* with NUMA, each hop adds 20ns to access times. on an 8-socket system, memory
+  may be 3 hops away.
+
+https://mechanical-sympathy.blogspot.com/2011/09/single-writer-principle.html
+* optimism can cause effective queuing effects just like locking
+* managing contention vs real work
+* message passing and letting threads do work without memory barriers is nice
+
+Incrementing a 64-bit counter 500 million times using a variety of techniques on my laptop with an i7-10710U:
+
+<table style="width:100%">
+  <tr>
+    <td> method </td>
+    <td> time(ms) </td>
+  </tr>
+  <tr>
+    <td>one thread, write_volatile</td>
+    <td>130</td>
+  </tr>
+  <tr>
+    <td>one thread + Release memory barrier</td>
+    <td>130</td>
+  </tr>
+  <tr>
+    <td>one thread + SeqCst memory barrier</td>
+    <td>5,500</td>
+  </tr>
+  <tr>
+    <td>one thread with CAS</td>
+    <td>3,200</td>
+  </tr>
+  <tr>
+    <td>two threads with Relaxed CAS</td>
+    <td>12,200</td>
+  </tr>
+  <tr>
+    <td>two threads with SeqCst CAS</td>
+    <td>12,400</td>
+  </tr>
+  <tr>
+    <td>one thread with lock</td>
+    <td>9,000</td>
+  </tr>
+  <tr>
+    <td>two threads with a lock</td>
+    <td>65,000</td>
+  </tr>
+</table>
+
+https://mechanical-sympathy.blogspot.com/2011/07/memory-barriersfences.html
+* each cpu core has 6 execution units that can execute instructions in parallel
+* execution units access registers
+* execution units read from load buffers and write to store buffers
+* load and store buffers interact with the L1 cache
+* store buffers feed into the write combining buffer
+* the write combining buffer feeds into the L2 cache
+* the load and store buffers can be read from efficiently
+* reads will access the buffers first, avoiding cache if possible
+* barriers guarantee the visibility ordering to other cores
+* barriers propagate data in-order to the cache subsystem
+* store barriers push all data into the L1 cache
+* load barriers wait for all in-progress loads to complete before the next loads happen
+* full barriers combine load and store barriers
+* it is better to "batch" ordered work as much as possible to reduce barrier overhead
+
+https://mechanical-sympathy.blogspot.com/2011/07/false-sharing.html
+* to modify memory, your core needs to acquire exclusive access for the cacheline
+* this may involve going through the l3 cache (or worse) to invalidate the previous owner
+* multiple pieces of data may share the same cache line, which makes it impossible
+  to make progress in parallel
+* good graph showing false sharing [REPLICATE THIS IN RUST]
+
+https://mechanical-sympathy.blogspot.com/2013/02/cpu-cache-flushing-fallacy.html
+* MESIF - to write, a RFO must happen that invalidates other copies
+* cache coherency traffic is on its own bus
+* cache controller is a module on each L3 cache segment
+  * connected to on-socket ring-bus network
+  * sockets are connected to each other via this ring-bus network as well
+  * everything shares this ring-bus network
+    * cores
+    * L3 cache segments
+    * QPI/hypertransport controller (links sockets)
+    * memory controller
+    * integrated graphics subsystem
+  * the ring-bus network has 4 lanes
+    * request
+    * snoop
+    * acknowledge
+    * 32-bytes data per cycle
+* l3 cache is inclusive of l1/l2
+  * facilitates identification of which core has copies of which cachelines
+* read request from a core goes to the ring bus
+  * will read from main memory if uncached
+  * will read from l3 if clean
+  * will snoop from another core if modified
+  * the returned read will never be stale
+* TLB may need to be flushed depending on the address indexing policy on a context switch
+
+https://stackoverflow.com/questions/54876208/size-of-store-buffers-on-intel-hardware-what-exactly-is-a-store-buffer/54880249#54880249
+https://nicknash.me/2018/04/07/speculating-about-store-buffer-capacity/
+https://preshing.com/20120930/weak-vs-strong-memory-models/
+http://www.1024cores.net/home/parallel-computing/cache-oblivious-algorithms
+
 
 This list has been extracted from [Kobzol's wonderful hardware effects GitHub repo](https://github.com/Kobzol/hardware-effects).
 [Ben Titzer - What Spectre Means for Language Implementors](https://www.youtube.com/watch?v=FGX-KD5Nh2g)
@@ -1295,16 +1539,16 @@ Further reading:
 
 ## frequency scaling
 
-The first thing to know about real CPUs is that they constantly shift their
-frequencies to use less power and generate less heat while meeting demand. This
-has major implications for measurements. Many people run a workload, record some
-latency stats, make a change, run the workload again, and record the new stats.
-It is a mistake to assume that the delta between the two measurements is
-explained by whatever code changed in-between. Often, changes that may cause the
-compiler to spend more effort performing optimizations will cause frequency
-scaling to kick in to a greater extent before the workload under measurement
-gets a chance to run, causing the CPU to run the new workload at a diminished
-frequency, and making it appear to perform worse.
+CPUs constantly shift their frequencies to use less power and generate less
+heat while meeting demand. This has major implications for measurements. Many
+people run a workload, record some latency stats, make a change, run the
+workload again, and record the new stats. It is a mistake to assume that the
+delta between the two measurements is explained by whatever code changed
+in-between. Often, changes that may cause the compiler to spend more effort
+performing optimizations will cause frequency scaling to kick in to a greater
+extent before the workload under measurement gets a chance to run, causing the
+CPU to run the new workload at a diminished frequency, and making it appear to
+perform worse.
 
 Frequency scaling must be accounted for in your performance analysis. We must
 take multiple measurements.
@@ -1338,6 +1582,14 @@ are currently doing. It is available in most Linux package managers.
 ## write combining
 
 # CHAPTER 0b101: Rust specifics
+
+```
+It is hard to free fools
+from the chains they revere.
+
+- Voltaire
+```
+
 
 Rust's borrowing rules ensure that there will only exist a single mutable
 reference to some memory at a time.
@@ -1572,172 +1824,12 @@ show how much time each interesting thread is spent doing:
 https://profiler.firefox.com/docs/#/./guide-perf-profiling
 https://profiler.firefox.com/
 https://github.com/KDAB/hotspot
+* [Off-CPU Analysis](http://www.brendangregg.com/offcpuanalysis.html)
 
 [Elimination back-of stack](https://max-inden.de/blog/2020-03-28-elimination-backoff-stack)
 [A Scalable Lockfree Stack Algorithm](https://www.cs.bgu.ac.il/%7Ehendlerd/papers/p206-hendler.pdf)
 * elimination stack
 
-"It is hard to free fools from the chains they revere."
-- Voltaire
-
 <iframe width="560" height="315" src="https://www.youtube.com/embed/CIdXPIN3j38" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html
-https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf
-http://www.brendangregg.com/methodology.html
-http://www.brendangregg.com/blog/2018-02-09/kpti-kaiser-meltdown-performance.html
-http://www.brendangregg.com/offcpuanalysis.html
-https://towardsdatascience.com/an-overview-of-monte-carlo-methods-675384eb1694
 
- ```
- The computer is so powerful and so useful
- because it has eliminated many of the
- physical constraints of electromechanical
- devices. This is both its blessing and its
- curse: We do not have to worry about the
- physical realization of our software designs,
- but we also no longer have physical laws the
- limit the complexity of these designs—the latter
- could be called the curse of flexibility
- - Nancy Leveson, 1995
- ```
-
-[A New Accident Model for Engineering Safer Systems](http://sunnyday.mit.edu/accidents/safetyscience-single.pdf)
-
-https://mechanical-sympathy.blogspot.com/2013/08/lock-based-vs-lock-free-concurrent.html
-* graphs showing lock-free is fast
-
-https://www.real-logic.co.uk/training.html
-* syllabus for concurrent programming
-
-https://mechanical-sympathy.blogspot.com/2011/08/inter-thread-latency.html
-* avoiding memory barriers via batching
-
-https://mechanical-sympathy.blogspot.com/2011/07/write-combining.html
-* memory buffers are like unchained hash maps w/ 64-byte buckets (cachelines)
-* cachelines have 64-bit bitmap that records dirtiness
-* cacheline is the unit of memory transfer
-* evicting the previous tenant causes write-back, maybe all the way to dram
-* storing data means writing to L1, but if it's not there, need to do RFO
-* when going to L2, the CPU performs a request for ownership
-* until the RFO completes, the CPU stores the item to be written in a
-  cacheline-sized buffer among the "line fill buffers"
-* these buffers hold speculative stores until the cacheline can be acquired
-* the biggest benefit happens here when the longest delays happen: getting from DRAM
-* if multiple writes happen to the same cacheline, they can happen on the same buffer
-* reads will also snoop this buffer first
-* on some intel chips, there are 4 line fill buffers (on my laptop this is 8, see code)
-* this means that if we write to more than 4 separate cachelines in a loop, it slows down
-* with hyperthreading, there is more competition for these same buffers
-
-
-https://mechanical-sympathy.blogspot.com/2012/08/memory-access-patterns-are-important.html
-* cache access latencies are ~1ns, ~4ns, ~15ns
-* caches are effectively hash tables with a fixed number of slots for each hash value
-  * called "ways", 8-way = 8-slots per hash value
-* these each store 64 bytes, pulled in adjacently
-* memory gets evicted in LRU order
-* on eviction, memory gets written back, possibly all the way back to dram
-* each level of cache includes TLB mappings for virtual memory, 4k or 2mb pages
-* prefetching tends to access cache lines when accessed 2kb or less fixed stride apart
-* when we hit DRAM, memory is arranged in rows that are 4k (a page) wide. the entire
-  page is loaded into a row buffer. it has a queue that reorders requests to
-  the same page so that they can share the work of pulling a page into a row
-  buffer.
-* with NUMA, each hop adds 20ns to access times. on an 8-socket system, memory
-  may be 3 hops away.
-
-https://mechanical-sympathy.blogspot.com/2011/09/single-writer-principle.html
-* optimism can cause effective queuing effects just like locking
-* managing contention vs real work
-* message passing and letting threads do work without memory barriers is nice
-
-Incrementing a 64-bit counter 500 million times using a variety of techniques on a 2.4Ghz Westmere processor.
-source: https://mechanical-sympathy.blogspot.com/2011/09/single-writer-principle.html
-
-(REPLICATE THIS IN RUST)
-
-<table style="width:100%">
-  <tr>
-    <td> method </td>
-    <td> time(ms) </td>
-  </tr>
-  <tr>
-    <td>one thread</td>
-    <td>300</td>
-  </tr>
-  <tr>
-    <td>one thread + memory barrier</td>
-    <td>4,700</td>
-  </tr>
-  <tr>
-    <td>one thread with CAS</td>
-    <td>5,700</td>
-  </tr>
-  <tr>
-    <td>two threads with CAS</td>
-    <td>18,000</td>
-  </tr>
-  <tr>
-    <td>one thread with lock</td>
-    <td>10,000</td>
-  </tr>
-  <tr>
-    <td>two threads with a lock</td>
-    <td>118,000</td>
-  </tr>
-</table>
-
-https://mechanical-sympathy.blogspot.com/2011/07/memory-barriersfences.html
-* each cpu core has 6 execution units that can execute instructions in parallel
-* execution units access registers
-* execution units read from load buffers and write to store buffers
-* load and store buffers interact with the L1 cache
-* store buffers feed into the write combining buffer
-* the write combining buffer feeds into the L2 cache
-* the load and store buffers can be read from efficiently
-* reads will access the buffers first, avoiding cache if possible
-* barriers guarantee the visibility ordering to other cores
-* barriers propagate data in-order to the cache subsystem
-* store barriers push all data into the L1 cache
-* load barriers wait for all in-progress loads to complete before the next loads happen
-* full barriers combine load and store barriers
-* it is better to "batch" ordered work as much as possible to reduce barrier overhead
-
-https://mechanical-sympathy.blogspot.com/2011/07/false-sharing.html
-* to modify memory, your core needs to acquire exclusive access for the cacheline
-* this may involve going through the l3 cache (or worse) to invalidate the previous owner
-* multiple pieces of data may share the same cache line, which makes it impossible
-  to make progress in parallel
-* good graph showing false sharing [REPLICATE THIS IN RUST]
-
-https://mechanical-sympathy.blogspot.com/2013/02/cpu-cache-flushing-fallacy.html
-* MESIF - to write, a RFO must happen that invalidates other copies
-* cache coherency traffic is on its own bus
-* cache controller is a module on each L3 cache segment
-  * connected to on-socket ring-bus network
-  * sockets are connected to each other via this ring-bus network as well
-  * everything shares this ring-bus network
-    * cores
-    * L3 cache segments
-    * QPI/hypertransport controller (links sockets)
-    * memory controller
-    * integrated graphics subsystem
-  * the ring-bus network has 4 lanes
-    * request
-    * snoop
-    * acknowledge
-    * 32-bytes data per cycle
-* l3 cache is inclusive of l1/l2
-  * facilitates identification of which core has copies of which cachelines
-* read request from a core goes to the ring bus
-  * will read from main memory if uncached
-  * will read from l3 if clean
-  * will snoop from another core if modified
-  * the returned read will never be stale
-* TLB may need to be flushed depending on the address indexing policy on a context switch
-
-https://stackoverflow.com/questions/54876208/size-of-store-buffers-on-intel-hardware-what-exactly-is-a-store-buffer/54880249#54880249
-https://nicknash.me/2018/04/07/speculating-about-store-buffer-capacity/
-https://preshing.com/20120930/weak-vs-strong-memory-models/
-http://www.1024cores.net/home/parallel-computing/cache-oblivious-algorithms
