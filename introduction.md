@@ -43,9 +43,9 @@ fn main() -> sled::Result<()> {
     let value = db.generate_id()?.to_be_bytes();
 
     dbg!(
-        db.insert(key, value)?, // as in BTreeMap::insert
-        db.get(key)?,           // as in BTreeMap::get
-        db.remove(key)?,        // as in BTreeMap::remove
+        db.insert(key, &value)?, // as in BTreeMap::insert
+        db.get(key)?,            // as in BTreeMap::get
+        db.remove(key)?,         // as in BTreeMap::remove
     );
 
     Ok(())
