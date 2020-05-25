@@ -7,7 +7,7 @@ use std::{
     time::Instant,
 };
 
-const N: usize = 500_000_000;
+const N: usize = 50_000_000;
 
 fn black_box<T>(item: &T) -> T {
     unsafe { std::ptr::read_volatile(item) }

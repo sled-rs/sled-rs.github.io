@@ -57,10 +57,17 @@ This general pattern is called “discrete event simulation”. If you’re comi
 Who else sees success with this technique? It's by no means novel, it's just slow to catch on for some reason.
 
 * [FoundationDB](https://www.youtube.com/watch?v=4fFDFbi3toc) is essentially "Jepsen-proof" due to applying this technique, and others
-* [Riak]
-* [Partisan]
-* [Dropbox]
+* [Riak](https://dl.acm.org/doi/10.1145/2596631.2596633)
+* [Partisan](https://dl.acm.org/doi/pdf/10.1145/3231104.3231106?download=true)
+* [Dropbox](https://dropbox.tech/infrastructure/-testing-our-new-sync-engine)
+* aerospace and automotive engineers
 
 etc...
 
 Let's stop gawking at the repeated success of Jepsen and start building systems that Jepsen does not find bugs in. Let's use techniques that are thousands of times faster than Jepsen to catch bugs immediately instead of once per month before a big release, or never at all. Let's build systems that you can test for race conditions to begin with. Let's learn from our mistakes.
+
+Thanks for reading!
+
+If you found this article to be useful, please consider [supporting my efforts
+efforts](https://github.com/sponsors/spacejam) to share knowledge and
+productionize cutting edge database research with implementations in Rust :)
