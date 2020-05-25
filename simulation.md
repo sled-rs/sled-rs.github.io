@@ -57,7 +57,7 @@ This general pattern is called “discrete event simulation”. If you’re comi
 Who else sees success with this technique? It's by no means novel, it's just slow to catch on for some reason.
 
 * [FoundationDB](https://www.youtube.com/watch?v=4fFDFbi3toc) is essentially "Jepsen-proof" due to applying this technique, and others
-* [Riak](https://dl.acm.org/doi/10.1145/2596631.2596633)
+* [Riak](https://speakerdeck.com/jtuple/hansei-property-based-development-of-concurrent-systems)
 * [Partisan](https://dl.acm.org/doi/pdf/10.1145/3231104.3231106?download=true)
 * [Dropbox](https://dropbox.tech/infrastructure/-testing-our-new-sync-engine)
 * aerospace and automotive engineers
