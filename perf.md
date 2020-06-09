@@ -1002,7 +1002,7 @@ coherency costs that such distributed systems must pay.
 
 Further reading:
 
-* http://www.perfdynamics.com/Manifesto/USLscalability.html
+* [Original USL article](http://www.perfdynamics.com/Manifesto/USLscalability.html)
 
 ## trade-offs
 
