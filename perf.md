@@ -1590,7 +1590,6 @@ from the chains they revere.
 - Voltaire
 ```
 
-
 Rust's borrowing rules ensure that there will only exist a single mutable
 reference to some memory at a time.
 
@@ -1634,66 +1633,12 @@ A `Future` expects to have `poll` called by an "executor" which provides a
 register a callback that will be notified when it is ready to be polled again,
 if it is not already `Ready`.
 
-Here's a minimal executor that can run a single `Future` to completion. If the
-polled `Future` is not yet ready, it will sleep until the backing `Future`
-signals that it is ready to be polled again through the provided `Context`:
-
-```rust
-use std::sync::{Arc, Condvar, Mutex};
-use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
-
-#[derive(Default)]
-struct Park(Mutex<bool>, Condvar);
-
-fn unpark(park: &Park) {
-    *park.0.lock().unwrap() = true;
-    park.1.notify_one();
-}
-
-static VTABLE: RawWakerVTable = RawWakerVTable::new(
-    |clone_me| unsafe {
-        let arc = Arc::from_raw(clone_me as *const Park);
-        std::mem::forget(arc.clone());
-        RawWaker::new(Arc::into_raw(arc) as *const (), &VTABLE)
-    },
-    |wake_me| unsafe { unpark(&Arc::from_raw(wake_me as *const Park)) },
-    |wake_by_ref_me| unsafe { unpark(&*(wake_by_ref_me as *const Park)) },
-    |drop_me| unsafe { drop(Arc::from_raw(drop_me as *const Park)) },
-);
-
-/// Run a `Future`.
-pub fn run<F: std::future::Future>(mut f: F) -> F::Output {
-    // we shadow the input `Future` to prove the `Pin` correct
-    let mut f = unsafe { std::pin::Pin::new_unchecked(&mut f) };
-
-    // we must put the `Park` structure in an `Arc` because
-    // the backing `Future` may send the waker to another thread
-    let park = Arc::new(Park::default());
-    let sender = Arc::into_raw(park.clone());
-    let raw_waker = RawWaker::new(sender as *const _, &VTABLE);
-    let waker = unsafe { Waker::from_raw(raw_waker) };
-    let mut cx = Context::from_waker(&waker);
-
-    loop {
-        match f.as_mut().poll(&mut cx) {
-            Poll::Pending => {
-                let mut runnable = park.0.lock().unwrap();
-                while !*runnable {
-                    runnable = park.1.wait(runnable).unwrap();
-                }
-                *runnable = false;
-            }
-            Poll::Ready(val) => return val,
-        }
-    }
-}
-```
-
 In the section on the [universal scalability law](#universal-scalability-law)
 we discussed how concurrency often undermines possible performance gains of
-parallelization. Looking at this minimal executor, we can see a number of
-potential sources for contention and coherency costs which will drag down our
-scalability curve if we are not careful.
+parallelization. Looking at [a minimal
+executor](http://github.com/spacejam/extreme), we can see a number of potential
+sources for contention and coherency costs which will drag down our scalability
+curve if we are not careful.
 
 There is currently no way to tell a `Context` / `Waker` that your task is
 blocked due to a particular kind of event, which makes using this interface
