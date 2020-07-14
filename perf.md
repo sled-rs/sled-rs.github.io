@@ -81,14 +81,15 @@ performance-sensitive engineering. This guide also contains low-level
 information that will help you to better understand your partners. I think most
 folks will learn something new. I know I have. And, part of why I wrote this is
 to have a single place with a memorable URL where I can return to when I forget
-most of this stuff. Most importantly, when I unfurl fiery screeds in random
+most of this stuff. More importantly, when I unfurl fiery screeds in random
 internet comments I want to have an intimidating reference to which I can
 mercilesly link.
 
 I initially wrote this guide for the Rust ecosystem, where many people are now
 trying their hands at optimization for the first time. But nearly all of this document
 applies to general programming, with a few of the hardware effects mentioned
-being specific to x86 and ARM circa 2020.
+being specific to x86 and ARM circa 2020. Linux is assumed, because that's
+what the overwhelming majority of server workloads run today.
 
 This guide brings together ideas from systems engineering, systems theory,
 psychology, hardware, queuing theory, statistics, economics,
@@ -124,6 +125,7 @@ Let's kick this shit up! Here's what it's gonna look like...
 
 * ##### PART 0b000: MODELS, MEASUREMENTS AND MINDS
   * [principles](#principles)
+  * [e-prime and precise language](#e-prime-and-precise-language)
   * [metrics: latency, throughput, utilization and saturation](#metrics)
     * [latency vs throughput](#latency-vs-throughput)
     * [measuring latency](#measuring-latency)
@@ -131,8 +133,6 @@ Let's kick this shit up! Here's what it's gonna look like...
     * [case study: sled](#sled-case-study)
   * [experimental design](#experimental-design)
     * [experiment checklist](#experiment-checklist)
-  * [e-prime and precise language](#e-prime-and-precise-language)
-* ##### PART 0b001: UR ASS IS IN TIME AND SPACE
   * [concurrency and parallelism](#concurrency-and-parallelism)
   * [amdahl's law](#amdahls-law)
   * [universal scalability law](#universal-scalability-law)
@@ -141,6 +141,8 @@ Let's kick this shit up! Here's what it's gonna look like...
     * [memory pressure vs contention](#memory-pressure-vs-contention)
     * [speculation](#speculation)
     * [scheduling](#scheduling)
+* ##### PART 0b001: THE MACHINE
+  * [cache](#cache)
 
 # IT BEGINS
 
@@ -205,21 +207,77 @@ in many ways for the better.
 Don't be macho. Make decisions while having real data on-hand and limit the
 damage of hubris.
 
+## e-prime and precise language
+
+So many aspects of performance-critical engineering can be highly contextual
+and may vary wildly from one machine to another. It helps to avoid the verb
+"to be" and its conjugations "is", "are" etc... when describing observations.
+
+When we say something "is" something else, we are casually equating two
+similar things for convenience purposes, and we are lying to some extent.
+By avoiding false equivalences (usually easily spotted through use of "is", "are" etc...)
+we can both communicate more precisely and we can allow ourselves to reason
+about complexity far more effectively. Situations that may seem completely
+ambiguous when described using "to be" phrases are often quite unambiguous
+when taking care to avoid false equivalences. This general form of speech
+is known as [E-Prime](https://en.wikipedia.org/wiki/E-Prime).
+
+Don't say "lock-free queues are faster than mutex-backed queues", say "on
+hardware H with T threads running in tight loops performing operations O, our
+specific lock-free queue has been measured to achieve a latency distribution of
+X1 and our specicific mutex-backed queue has been measured to achieve a latency
+distribution of X2." It's likely your lock-free queue will sometimes perform
+worse than a well-made mutex-backed queue given certain hardware, contention
+and many other factors. What does "perform worse" even mean? Different use
+cases will have a different mix of available resources. A particular lock-free
+implementation that is higher throughput under high contention may use more
+memory, have a slower median latency, be buggier, and take longer to create
+than a mutex-backed structure that does not need to allocate or perform RCU.
+Is this ever going to be high contention, anyway? Are you sure you're writing
+this for the benefit of your system, or because you want to be macho at work?
+
+When we speak about comparative metrics, it is also important to avoid saying
+commonly misunderstood things like "workload A is 15% slower than workload B".
+Instead of saying "faster" it is helpful to speak in terms of latency or
+throughput, because both may be used to describe "speed" but they are in
+[direct opposition to each other](#latency-vs-throughput). Speaking
+in terms of relative percentages is often misleading. What does
+A (90) is 10% lower than B(100) mean if we don't know their actual
+values? Many people would think that B is `1.1 * A`, but in this case,
+`1.1 * 90 = 99`. It is generally better to describe comparative measurements
+in terms of ratios rather than relative percentages.
+
+The phrase `workload A is 20% slower than workload B` can be more clearly stated
+as `workload A was measured to have a throughput of 4:5 that of workload B`.
+Even though many people will see that and immediately translate it to "80%" in
+their heads, the chances of improperly reasoning about the difference are
+lower.
+
+When we make our communications less ambiguous, we have more brain cycles
+available for speeding things up based on clarified mental models. The time we
+spend can be better spent because it can be more precisely targeted.
+
 ## metrics
 
 Performance metrics come in many shapes and sizes. Workloads will have a few
-metrics that matter far more than others.
+metrics that matter far more than others. Every workload has its own set
+of priorities and available resources.
 
 It's at this point that I'm obligated to bash
 [benchmarketing](http://smalldatum.blogspot.com/2014/06/benchmarketing.html),
 but honestly it's often an important tool for projects to see success - you
 just need to be clear about what your metrics actually are. Don't trick people.
-Give people the means to reproduce your findings. All that good science shit.
+Give people the means to reproduce your findings.
 
-Most systems performance metrics boil down to these:
+Many systems performance metrics boil down to these:
 
 * latency - the time that an operation takes
 * throughput - how many operations can be performed in some unit of time
+* utilization - the proportion of time that a system (server, disk,
+  hashmap, etc...) is busy handling requests, as opposed to waiting for the
+  next request to arrive.
+* saturation - the extent to which requests must queue before being handled
+  by the system, usually measured in terms of queue depth (length).
 * space - whoah.
 
 At higher scales, these metrics become factors in major concerns like:
@@ -241,36 +299,8 @@ running infrastructure somewhere take account of the storage costs primarily.
 Engineers love using the fancy hosted databases like Spanner, but the
 cost per byte stored is astronomical. BE AWARE.
 
-In trying to determine how many servers do I need to pay for to get my shit
-done, we need to consider latency, throughput and required space (memory and storage).
-
-If we have 1000 requests arriving per second at an exponential distribution (as
-opposed to one arriving each millisecond on the dot), our system actually needs
-to process requests faster than one each millisecond. Queue theory tells us
-that as our arrival rate approaches our processing rate, our queue depth
-approaches infinity. Nobody's got that kind of time to lay around in line to
-be served. Queue theory provides a number of key intuitions for reasoning about
-the relationship between latency and throughput. See [this
-site](https://witestlab.poly.edu/blog/average-queue-length-of-an-m-m-1-queue/)
-for pretty graphs illustrating this on an
-[M/M/1](https://en.wikipedia.org/wiki/Kendall%27s_notation) queue analyzing a
-network system.
-
-In real-world systems, arrivals happen in difficult-to-predict but
-acceptable-to-model distributions that often resemble exponential or Zipfian
-distributions. These queue length explosions really do happen, even when
-nothing is really wrong. They are normal and should be planned for by being
-careful about TCP backlog lengths (usually set to be too large), timeout
-durations (usually set to be too long), retry strategies (*truncated*
-exponential backoffs), circuit-breaker patterns, etc...
-
-Some other important general-purpose metrics are:
-
-* utilization - the proportion of time that a system (server, disk,
-  hashmap, etc...) is busy handling requests, as opposed to waiting for the
-  next request to arrive.
-* saturation - the extent to which requests must queue before being handled
-  by the system, usually measured in terms of queue depth (length).
+In trying to determine _how many servers do I need to pay for to get my shit
+done_, we need to consider latency, throughput and required space (memory and storage).
 
 ### latency vs throughput
 
@@ -335,9 +365,8 @@ dependencies in the critical paths of high-throughput workloads. Mixing and
 matching systems in our critical paths without evaluating their queuing
 characteristics is likely to result in terrible performance.
 
-The authors of the frameworks you're using probably don't understand these
-basic engineering principles. Measure what's happening and keep your
-queuing behaviors aligned and your system will fly.
+Measure what's happening and keep your queuing behaviors aligned and your
+system will fly.
 
 Under light load, throughput-bound systems can sometimes scale down to reduce
 buffering and achieve lower latency at lower loads. [Andrea
@@ -391,7 +420,7 @@ not very interesting for our highly discrete computer systems because it hides
 the impact of outliers and gives us no insight into the distribution of data.
 Things like normal curves and t-tests do not apply for data which do not follow
 normal distributions. Determining what our distribution looks like at all is
-part of our work.
+a vital part of our work.
 
 We usually use histograms so that we can understand the distribution of our
 data. The 0th percentile is the minimum measurement. The 100th percentile is
@@ -415,12 +444,12 @@ Imagine this scenario:
 How long does the front-end system need to wait for?
 
 The probability of needing to wait 1 second for a single request is 1% (99th
-percentile is 1s). The probability of needing to wait 1 second for 2 requests is
-1.9% (`1 - (0.99 ^ 2)`). Intuition: if we sent 1,000,000 requests, the
-percentage would not become 1,000,000 * 1%, or 10,000%, because 100% is the max
-probability an event can have. For this example, everything between the 99th
-and 100th percentiles is exactly 1 second. All of our slowest 1% of requests
-take 1 second.
+percentile is 1s). Pretending the distributions are independent, the
+probability of needing to wait 1 second for 2 requests is 1.9% (`1 - (0.99 ^
+2)`). Intuition: if we sent 1,000,000 requests, the percentage would not become
+1,000,000 * 1%, or 10,000%, because 100% is the max probability an event can
+have. For this example, everything between the 99th and 100th percentiles is
+exactly 1 second. All of our slowest 1% of requests take 1 second.
 
 The probability of needing to wait 1 second for 100 requests is `1 - (0.99 ^
 100)`, or 63%. Even though the event only happens 1% of the time, our front-end
@@ -540,33 +569,25 @@ because there are so many other variables that impact performance.
 Your machine does some things that might not be obvious, which will change your
 measurements:
 
-* [CPU frequency scaling](#frequency-scaling)
+* CPU frequency scaling
   * CPUs will burst to high frequencies for short periods of time to make short tasks run quicker
   * CPUs will cut dramatically lower their frequencies to use less power over time
   * CPUs will cut dramatically lower their frequencies to generate less heat over time
   * did better compilation cause your CPU to heat up? your **better** code may run **slower** afterwards
   * is your laptop running on battery? **better** code may run **slower**
-  * p-state scaling may be disabled if using the intel_pstate driver by setting the
-    linux kernel boot command argument `intel_pstate=no_hwp`
-  * turbo boost can be disabled by setting
-    `echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo` if
-    running with intel_pstate or `echo 0 | sudo tee
-    /sys/devices/system/cpu/cpufreq/boost` if using acpi
 * is the data you're reading from disk already in the OS pagecache?
   * your kernel keeps a lot of recently accessed file data in memory to speed up future accesses
   * the second run of a program that reads data from disk doesn't pay the disk costs. **better** code may run **slower** than slower code with a warmed cache
-  * pagecache can be dropped via `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches` (thanks [@vertexclique](https://twitter.com/vertexclique))
 * is your memory becoming more fragmented?
-  * system-wide memory can be compacted via `echo 1 | sudo tee /proc/sys/vm/compact_memory` (thanks [@knweiss](https://twitter.com/knweiss))
 * [The linking order used to combine otherwise identical compiled code objects when creating a binary](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
   * can result in 10% more cycles with zero code changes. **better** code may run **slower**
 * [yelling near your computer](https://www.youtube.com/watch?v=tDacjrSCeq4)
   * having too much fun? **better** code may run **slower**
-* [Are you accessing different memory locations that are 4k apart?](#4k-aliasing)
 * If the kernel pulls your thread to a different socket than the one that
   initially allocated a bunch of memory, the latency to keep accessing that
-  memory will explode.
-  * threads can be pinned to specific cores on specfic sockets to avoid
+  memory will increase by 60ish ns as requests need to be proxied through
+  the original socket.
+  * threads can be pinned to sets of cores on specfic sockets to avoid
     being migrated to another socket.
 
 If an experiment were a pure math function, changing our input variables would
@@ -632,7 +653,6 @@ Better:
 * restart your system with `intel_pstate=disable` to linux kernel line.
 * close slack. close your web browser.
 * kill as many non-essential processes as you can get away with.
-* unset as many environment variables as possible (see papers below, it matters)
 * if running a laptop, use the performance governor instead of powersave
   `for policy in /sys/devices/system/cpu/cpufreq/policy*; do echo $policy; echo "performance" | sudo tee $policy/scaling_governor; done`
 * compile workload 1
@@ -664,27 +684,26 @@ There are many variables that we are always ignorant of. If we want to be
 more confident that our system is actually better, we can gather corroborating
 evidence that can help explain the measured effect.
 
-There are a lot of things that happen in between your code changing and
-a timing metric changing. A compiler transforms the code into machine code.
-Machine code is linked together in a certain order (causing up to a 10% performance
-impact due to link order alone, see papers below). Then when we run the binary,
-we load the various code objects into memory at addresses which may be effected
-by ASLR, further introducing a considerable amount of variance. Anything
-that impacts memory layout could have a strong impact on the effectiveness
-of our memory [caches](#cache), which use a lot of heuristics to predict
-which memory you may access next, and these may be impacted by changes
-in physical memory allocation during the run of a workload. Your CPU will
-run when it has instructions and data to zip together, but it really spends
-a huge amount of time just waiting around for its dependencies to arrive.
-Whenever your instructions and data finally show up, your CPU will execute
-them in creative ways that are later verified to conform to the dependency
-structure communicated through the compiled machine code, although they are
-often thrown away due to finding out that some data dependency has changed
-because of what some other CPU core published to the shared cache coherency
-subsystem.
-We'll get into this stuff in gory detail below in the [cache](#cache) section.
-Importantly, the CPU will update a lot of its own performance counters
-as these various operations occur.
+There are a lot of things that happen in between your code changing and a
+timing metric changing. A compiler transforms the code into machine code.
+Machine code is linked together in a certain order (causing up to a 10%
+performance impact due to link order alone, see papers in the further reading
+section below). Then when we run the binary, we load the various code objects
+into memory at addresses which may be effected by ASLR, further introducing a
+considerable amount of variance. Anything that impacts memory layout could have
+a strong impact on the effectiveness of our memory caches, which use
+several heuristics to predict which memory you may access next, and these may
+be impacted by changes in physical memory allocation during the run of a
+workload. Your CPU will run when it has instructions and data to zip together,
+but it really spends a huge amount of time just waiting around for its
+dependencies to arrive.  Whenever your instructions and data finally show up,
+your CPU will execute them in creative ways that are later verified to conform
+to the dependency structure communicated through the compiled machine code,
+although they are often thrown away due to finding out that some data
+dependency has changed because of what some other CPU core published to the
+shared cache coherency subsystem.  We'll get into this stuff in gory detail
+below in the [cache](#cache) section. Importantly, the CPU will update a lot
+of its own performance counters as these various operations occur.
 
 For our intermediate memory statistics, allocators like [jemalloc expose many
 metrics](https://github.com/jemalloc/jemalloc/wiki/Use-Case%3A-Basic-Allocator-Statistics)
@@ -720,17 +739,27 @@ possible alternative explanations for the high-level change and
 determining whether they may be the true explanation for the observed
 changes.
 
-In addition to collecting runtime metrics while running our code
-in a more-or-less production configuration, we can also use tools
-like [llvm-mca](#llvm-mca) and [cachegrind](#cachegrind) to
-estimate expected instruction and cache performance of our
-programs, and [DHAT](#dhat) and [massif](#massif) to analyze
-our heaps. These tools do not run your program in a production
-configuration, but they still yield interesting metrics that may
-be used to increase confidence in an effort to influence a
-high-level metric.
+In addition to collecting runtime metrics while running our code in a
+more-or-less production configuration, we can also use tools like llvm-mca and
+cachegrind to estimate expected instruction and cache performance of our
+programs, and DHAT and massif to analyze our heaps. These tools do not run your
+program in a production configuration, but they still yield interesting metrics
+that may be used to increase confidence in an effort to influence a high-level
+metric.
+
+Our CPUs expose a wide variety of performance counters that may also be
+sampled to compare against our other measurements.
 
 ### experiment checklist
+
+* p-state scaling may be disabled if using the intel_pstate driver by setting the
+  linux kernel boot command argument `intel_pstate=no_hwp`
+* turbo boost can be disabled by setting
+  `echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo` if
+  running with intel_pstate or `echo 0 | sudo tee
+  /sys/devices/system/cpu/cpufreq/boost` if using acpi
+* pagecache can be dropped via `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches` (thanks [@vertexclique](https://twitter.com/vertexclique))
+* system-wide memory can be compacted via `echo 1 | sudo tee /proc/sys/vm/compact_memory` (thanks [@knweiss](https://twitter.com/knweiss))
 
 Here are two nice checklists from Raj Jain's [The Art of Computer Systems
 Performance
@@ -777,57 +806,11 @@ Box 2.1 Checklist for Avoiding Common Mistakes in Performance Evaluation
 
 Further reading:
 
-* [Performance Analysis Methodology](http://www.brendangregg.com/methodology.html)
 * [Five ways not to fool yourself](https://timharris.uk/misc/five-ways.pdf)
+* [Performance Analysis Methodology](http://www.brendangregg.com/methodology.html)
 * [How Not to Measure Computer System Performance](https://www.cs.utexas.edu/~bornholt/post/performance-evaluation.html)
 * [Producing Wrong Data Without Doing Anything Obviously Wrong! - ASPLOS 2009](https://users.cs.northwestern.edu/~robby/courses/322-2013-spring/mytkowicz-wrong-data.pdf)
 * [ASPLOS 13 - STABILIZER: Statistically Sound Performance Evaluation - ASPLOS 2013](https://people.cs.umass.edu/~emery/pubs/stabilizer-asplos13.pdf)
-
-## e-prime and precise language
-
-So many aspects of performance-critical engineering can be highly contextual
-and may vary wildly from one machine to another. It helps to avoid the verb
-"to be" and its conjugations "is", "are" etc... when describing observations.
-
-Don't say "lock-free queues are faster than mutex-backed queues", say "on
-hardware H with T threads running in tight loops performing operations O, our
-specific lock-free queue has been measured to achieve a latency distribution of
-L1 and our specicific mutex-backed queue has been measured to achieve a latency
-distribution of L2." It's likely your lock-free queue will sometimes perform
-worse than a well-made mutex-backed queue given certain hardware, contention
-and many other factors.
-
-When we say something "is" something else, we are casually equating two
-similar things for convenience purposes, and we are lying to some extent.
-By avoiding false equivalences (usually easily spotted through use of "is", "are" etc...)
-we can both communicate more precisely and we can allow ourselves to reason
-about complexity far more effectively. Situations that may seem completely
-ambiguous when described using "to be" phrases are often quite unambiguous
-when taking care to avoid false equivalences. This general form of speech
-is known as [E-Prime](https://en.wikipedia.org/wiki/E-Prime).
-
-When we speak about comparative metrics, it is also important to avoid saying
-commonly misunderstood things like "workload A is 15% slower than workload B".
-Instead of saying "faster" it is helpful to speak in terms of latency or
-throughput, because both may be used to describe "speed" but they are in
-[direct opposition to each other](#latency-vs-throughput). Speaking
-in terms of relative percentages is often misleading. What does
-A (90) is 10% lower than B(100) mean if we don't know their actual
-values? Many people would think that B is `1.1 * A`, but in this case,
-`1.1 * 90 = 99`. It is generally better to describe comparative measurements
-in terms of ratios rather than relative percentages.
-
-The phrase `workload A is 20% slower than workload B` can be more clearly said
-as `workload A was measured to have a throughput of 4:5 that of workload B`.
-Even though many people will see that and immediately translate it to "80%" in
-their heads, the chances of improperly reasoning about the difference are
-lower.
-
-When we make our communications less ambiguous, we can spend more time speeding
-things up based on clarified mental models. The time we spend can be better
-spent because it can be more precisely targeted.
-
-# CHAPTER 0b001: UR ASS IS IN TIME AND SPACE
 
 ## concurrency and parallelism
 
@@ -1284,4 +1267,20 @@ If you want to dig in deeper, this distributed scheduling
 paper made a lot of waves in 2016 and comes to some nice
 conclusions: [Firmament: Fast, Centralized Cluster Scheduling at
 Scale](https://www.usenix.org/system/files/conference/osdi16/osdi16-gog.pdf).
+
+# CHAPTER 0b001: THE MACHINE
+
+Every workload requires a different mixture of resources:
+
+* threads
+* cache
+* DRAM
+* files
+* sockets
+* syscalls
+
+Each of these is surrounded by a large number of popular misconceptions.
+
+## cache
+
 
