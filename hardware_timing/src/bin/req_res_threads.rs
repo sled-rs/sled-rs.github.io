@@ -2,7 +2,7 @@ use std::io::{self, prelude::*};
 use std::net::{TcpListener, TcpStream};
 
 /// Echoes messages from the client back to it.
-fn echo(mut src: TcpStream) -> io::Result<()> {
+fn sync_echo(mut src: TcpStream) -> io::Result<()> {
     let buf: &mut [u8] = &mut [0; 4096];
     let mut dst = src.try_clone().unwrap();
     loop {
@@ -24,10 +24,13 @@ fn main() -> io::Result<()> {
 
     for stream_res in listener.incoming() {
         let stream = stream_res.unwrap();
-        println!("Accepted client: {:?}", stream.peer_addr().unwrap());
+        println!(
+            "Accepted client: {:?}",
+            stream.peer_addr().unwrap()
+        );
 
         // Spawn a task that echoes messages from the client back to it.
-        std::thread::spawn(move || echo(stream));
+        std::thread::spawn(move || sync_echo(stream));
     }
     Ok(())
 }

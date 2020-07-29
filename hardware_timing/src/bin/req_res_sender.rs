@@ -4,11 +4,12 @@ use std::net::TcpStream;
 use std::thread;
 
 fn pew(port: u16) {
-    let mut client = TcpStream::connect(("localhost", port)).unwrap();
+    let mut client =
+        TcpStream::connect(("localhost", port)).unwrap();
 
     let data: &mut [u8] = &mut [0; 4096];
 
-    for _ in 0..10_000 {
+    for _ in 0..100_000 {
         client.write_all(data).unwrap();
         client.read_exact(data).unwrap();
     }

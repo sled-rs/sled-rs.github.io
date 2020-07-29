@@ -4,7 +4,9 @@ use futures::io;
 use smol::{Async, Task};
 
 /// Echoes messages from the client back to it.
-async fn echo(stream: Async<TcpStream>) -> io::Result<()> {
+async fn async_echo(
+    stream: Async<TcpStream>,
+) -> io::Result<()> {
     io::copy(&stream, &mut &stream).await?;
     Ok(())
 }
@@ -12,17 +14,26 @@ async fn echo(stream: Async<TcpStream>) -> io::Result<()> {
 fn main() -> io::Result<()> {
     smol::run(async {
         // Create a listener.
-        let listener = Async::<TcpListener>::bind("127.0.0.1:7001")?;
-        println!("Listening on {}", listener.get_ref().local_addr()?);
+        let listener = Async::<TcpListener>::bind((
+            [127, 0, 0, 1],
+            7001,
+        ))?;
+        println!(
+            "Listening on {}",
+            listener.get_ref().local_addr()?
+        );
         println!("Now start a TCP client.");
 
         // Accept clients in a loop.
+        let mut clients = vec![];
         loop {
-            let (stream, peer_addr) = listener.accept().await?;
+            let (stream, peer_addr) =
+                listener.accept().await?;
             println!("Accepted client: {}", peer_addr);
 
             // Spawn a task that echoes messages from the client back to it.
-            Task::spawn(echo(stream)).unwrap().detach();
+            let client = Task::spawn(async_echo(stream));
+            clients.push(client);
         }
     })
 }
