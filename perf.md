@@ -1363,7 +1363,7 @@ the overall runtime is. Unlike deletion profiling, it doesn't potentially
 break the program by using it, and it can be widely employed to find
 opportunities for tuning things.
 
-[Coz](https://github.com/plasma-umass/coz)is one of the best-known
+[Coz](https://github.com/plasma-umass/coz) is one of the best-known
 implementations of it. There is also support for rust, which was upstreamed
 after beginning in
 [alexcrichton/coz-rs](https://github.com/alexcrichton/coz-rs).
