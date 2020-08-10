@@ -939,7 +939,9 @@ The USL describes two costs associated with adding more concurrency to a workloa
 * coherency - the amount that costs must be paid to reassemble or
   block on other work as the amount of concurrency increases in the system
 
-![graphs showing how contention flattens the scalability curve and incoherency pulls it down](art/usl.png)
+[![graphs showing how contention flattens the scalability curve and incoherency
+pulls it
+down](art/usl.png)](http://www.perfdynamics.com/Manifesto/USLscalability.html)
 
 The USL shows that concurrency can reduce possible gains of parallelism by
 introducing contention and coherency costs. Contention is effectively the
