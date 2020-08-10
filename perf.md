@@ -915,9 +915,10 @@ predict inputs, the more we can speculatively execute results in parallel.
 great talks on a project to take this concept much farther than would seem
 plausible.
 
-There are sometimes parts of our programs that can be parallelized, while others
-must be executed in a serial fashion. It shows that throwing more resources at a
-workload will not usually cause that workload to complete in a fraction of time
+There are sometimes parts of our programs that can be parallelized, while
+others must be executed in a serial fashion. Amdahl's law shows that throwing
+more resources at a workload will not usually cause that workload to complete
+in a proportional fraction of time
 
 The main takeaway:
 
