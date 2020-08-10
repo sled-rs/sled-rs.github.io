@@ -708,8 +708,7 @@ your CPU will execute them in creative ways that are later verified to conform
 to the dependency structure communicated through the compiled machine code,
 although they are often thrown away due to finding out that some data
 dependency has changed because of what some other CPU core published to the
-shared cache coherency subsystem.  We'll get into this stuff in gory detail
-below in the [cache](#cache) section. Importantly, the CPU will update a lot
+shared cache coherency subsystem. Importantly, the CPU will update a lot
 of its own performance counters as these various operations occur.
 
 For our intermediate memory statistics, allocators like [jemalloc expose many
