@@ -1,4 +1,4 @@
-# sled theoretical performance manual
+# sled theoretical performance guide
 
 [![github](https://img.shields.io/github/stars/spacejam/sled.svg?style=social)](https://github.com/spacejam/sled)
 [![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled)
