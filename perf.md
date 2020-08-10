@@ -1,11 +1,21 @@
-# sled performance guide
+# sled theoretical performance manual
 
 [![github](https://img.shields.io/github/stars/spacejam/sled.svg?style=social)](https://github.com/spacejam/sled)
 [![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled)
 [![chat](https://img.shields.io/discord/509773073294295082.svg?logo=discord)](https://discord.gg/Z6VsXds)
 [![sponsors](https://img.shields.io/opencollective/backers/sled)](https://github.com/sponsors/spacejam)
 
-WARNING: Viewer discretion is advised.
+This guide covers timeless ideas that are helpful to keep in mind while working with
+systems where performance matters. Many of these ideas are fairly "durable"
+and will apply regardless of what hardware, programming language, operating
+system, or decade you are working in.
+
+Stay tuned for follow-up articles that will drill into hardware and
+more Rust-specific techniques.
+
+Skip to the [table of contents](#contents) if you don't like intros.
+
+There's some foul language in here. Enjoy!
 
 ## executive summary
 
@@ -77,13 +87,11 @@ It begins today.
 
 
 This guide contains basic information for getting started with
-performance-sensitive engineering. This guide also contains low-level
-information that will help you to better understand your partners. I think most
-folks will learn something new. I know I have. And, part of why I wrote this is
-to have a single place with a memorable URL where I can return to when I forget
-most of this stuff. More importantly, when I unfurl fiery screeds in random
-internet comments I want to have an intimidating reference to which I can
-mercilesly link.
+performance-sensitive engineering. I think most folks will learn something new.
+I know I have. And, part of why I wrote this is to have a single place with a
+memorable URL where I can return to when I forget most of this stuff. More
+importantly, when I unfurl fiery screeds in random internet comments I want to
+have an intimidating reference to which I can mercilesly link.
 
 I initially wrote this guide for the Rust ecosystem, where many people are now
 trying their hands at optimization for the first time. But nearly all of this document
@@ -123,30 +131,29 @@ I love you.
 
 Let's kick this shit up! Here's what it's gonna look like...
 
-* ##### PART 0b000: MODELS, MEASUREMENTS AND MINDS
-  * [principles](#principles)
-  * [e-prime and precise language](#e-prime-and-precise-language)
-  * [metrics: latency, throughput, utilization and saturation](#metrics)
-    * [latency vs throughput](#latency-vs-throughput)
-    * [measuring latency](#measuring-latency)
-    * [productivity](#productivity)
-    * [case study: sled](#sled-case-study)
-  * [experimental design](#experimental-design)
-    * [experiment checklist](#experiment-checklist)
-  * [concurrency and parallelism](#concurrency-and-parallelism)
-  * [amdahl's law](#amdahls-law)
-  * [universal scalability law](#universal-scalability-law)
-  * [trade-offs](#trade-offs)
-    * [the RUM conjecture](#the-RUM-conjecture)
-    * [memory pressure vs contention](#memory-pressure-vs-contention)
-    * [speculation](#speculation)
-    * [scheduling](#scheduling)
-* ##### PART 0b001: THE MACHINE
-  * [cache](#cache)
+* [principles](#principles)
+* [e-prime and precise language](#e-prime-and-precise-language)
+* [metrics: latency, throughput, utilization and saturation](#metrics)
+  * [latency vs throughput](#latency-vs-throughput)
+  * [measuring latency](#measuring-latency)
+  * [productivity](#productivity)
+  * [case study: sled](#sled-case-study)
+* [experimental design](#experimental-design)
+  * [experiment checklist](#experiment-checklist)
+* [concurrency and parallelism](#concurrency-and-parallelism)
+* [amdahl's law](#amdahls-law)
+* [universal scalability law](#universal-scalability-law)
+* [trade-offs](#trade-offs)
+  * [the RUM conjecture](#the-RUM-conjecture)
+  * [memory pressure vs contention](#memory-pressure-vs-contention)
+  * [speculation](#speculation)
+  * [scheduling](#scheduling)
+* [scouting ahead](#scouting-ahead)
+  * [flamegraphs](#flamegraphs)
+  * [deletion profiling](#deletion-profiling)
+  * [causal-profiling](#causal-profiling)
 
 # IT BEGINS
-
-# CHAPTER 0b000: MODELS, MEASUREMENTS AND MINDS
 
 ## principles
 
@@ -571,8 +578,8 @@ measurements:
 
 * CPU frequency scaling
   * CPUs will burst to high frequencies for short periods of time to make short tasks run quicker
-  * CPUs will cut dramatically lower their frequencies to use less power over time
-  * CPUs will cut dramatically lower their frequencies to generate less heat over time
+  * CPUs will lower their frequencies to use less power over time
+  * CPUs will lower their frequencies to generate less heat over time
   * did better compilation cause your CPU to heat up? your **better** code may run **slower** afterwards
   * is your laptop running on battery? **better** code may run **slower**
 * is the data you're reading from disk already in the OS pagecache?
@@ -1268,19 +1275,126 @@ paper made a lot of waves in 2016 and comes to some nice
 conclusions: [Firmament: Fast, Centralized Cluster Scheduling at
 Scale](https://www.usenix.org/system/files/conference/osdi16/osdi16-gog.pdf).
 
-# CHAPTER 0b001: THE MACHINE
+## scouting ahead
 
-Every workload requires a different mixture of resources:
+One of the most important lessons that pilots learn is to make decisions
+based on the readings from their flight instruments. Humans are surprisingly
+poor judges of issues like "which direction is the ground" especially when
+flying at night and in storms. Learning to trust the readings of the instruments
+is vital for staying alive over many flights in varied weather situations.
 
-* threads
-* cache
-* DRAM
-* files
-* sockets
-* syscalls
+Programmers often don't do this. We tend to make random guesses based on some
+primitive feeling, resulting in many hours lost pursuing the impossible
+over the course of a career. But our machines are quite amenable to measurement,
+and we can avoid wasting so much of our lives by paying better attention to
+metrics that are easy to acquire before spending time optimizing something
+that isn't a problem to begin with.
 
-Each of these is surrounded by a large number of popular misconceptions.
+Many potential optimizations can take hours or weeks of coding and
+refactoring before you can get the system to a place where you can perform any
+measurements at all. Sometimes you have a strong hunch, or sometimes you have
+5000 engineers whose time you don't respect, but in any case, sometimes
+optimizations take a lot of effort. Fortunately, there are a lot of techniques
+available to us for avoiding performing work that will be thrown away, and in
+the process, increasing the amount of respect we can show ourselves and our
+teammates by not asking them to do impossible things.
 
-## cache
+Here are three techniques that can provide evidence that may help to
+inform high quality decisions about where engineering effort may be spent
+with a higher chance of success before just jumping into a suspected optimization
+somewhere:
 
+1. flamegraphs
+2. deletion profiling
+3. causal profiling
 
+#### flamegraphs
+
+Flamegraphs are useful for visualizing the costs associated with specific code
+locations by showing the expense in terms of visual area. They are a good
+"first glance" at where a program may be spenting a lot of time, instructions,
+or some other measurable resource but there are a number of caveats that come
+with their interpretation, and you should only use them as a kind of flashlight
+that may illuminate where specific costs are arising in code. In many cases,
+they will not show costs associated with time spent off-cpu waiting for
+blocking IO etc...  so you need to be mindful of this, or use a tool that
+specifically supports [off-cpu
+profiling](http://www.brendangregg.com/FlameGraphs/offcpuflamegraphs.html).
+
+I've already written a bit about them on the [flamegraph-rs/flamegraph
+README](https://github.com/flamegraph-rs/flamegraph) (scroll down for a guide
+on how to use them).
+
+It's important to note that you can associate a variety of different kinds of
+costs with code using flamegraphs, including allocations, off-cpu time, branch
+mispredictions, cache misses, etc...
+
+I also strongly recommend checking out
+[KDAB/Hotspot](https://github.com/KDAB/hotspot) for both generating and
+visualizing perf data. It has a nice UI and may be preferable for some users to
+the above flamegraph utility.
+
+Personally, I frequently use a mix of the above flamegraph tool, hotspot, and
+`perf report` directly in the terminal, depending on the kind of visualization
+I am trying to generate.
+
+Also see [Brendan Gregg's page on
+flamegraphs](http://www.brendangregg.com/flamegraphs.html).  He has probably
+done more than anyone in recent years to help people to better understand their
+system's performance. His book [Systems Performance: Enterprise and the
+Cloud](https://www.amazon.com/gp/product/0133390098/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0133390098&linkCode=as2&tag=tylerneely06-20&linkId=4af03a7e62f4c60b080de384c582e721]
+is also extremely high quality, especially chapter 2: Methodology.
+
+#### deleteion profiling
+
+This is one of my favorites because it's so easy when it's applicable.
+Just comment out some function call that you are curious about the cost of
+and see how much faster the program runs. If it's not any faster,
+it doesn't matter how much you improve it, you will never be able to match
+the benefit of completely deleting it (assuming it doesn't get compiled away anyway).
+Don't spent time speeding up code that does not contribute to the overall
+cost.
+
+#### causal profiling
+
+Causal profiling is kind of the opposite of deletion profiling. Instead
+of deleting code, it adds delays in different places to see how much worse
+the overall runtime is. Unlike deletion profiling, it doesn't potentially
+break the program by using it, and it can be widely employed to find
+opportunities for tuning things.
+
+[Coz](https://github.com/plasma-umass/coz)is one of the best-known
+implementations of it. There is also support for rust, which was upstreamed
+after beginning in
+[alexcrichton/coz-rs](https://github.com/alexcrichton/coz-rs).
+
+Using these profilers and others like DHAT, massif, cachegrind, etc... will
+show you where you may stand to benefit from additional optimization effort.
+
+Remember, profiling tends to rely on sampling techniques that are quite
+lossy. Use profiling to find optimization targets, but then rely on a variety
+of correlated metrics to gain confidence that your changes are actually improving
+the performance of the system instead of just shifting effort into a blind spot
+of the profiler.
+
+# that's it for now
+
+This guide has touched on a variety of techniques, theories, models, and
+mindsets that have proven to be invaluable while writing sled and working
+with a variety of other stateful systems.
+
+The most important thing is to ask yourself what really matters. Your time
+is precious. Try to give yourself high quality information, and base
+decisions on the estimated expectation that they may help you with what matters
+to you. We are wrong about everything to some extent, but at least when
+we work with computers we usually have a variety of measurement techniques
+available. We can perform lightweight experiments to feel out the potential
+impact of longer-term engineering efforts. One of the most important
+aspects of some of these ideas is that they illuminate the "negative space"
+that is unlikely to be possible without extreme expense. Gaining confidence in potential
+positive impacts before investing significant effort is ultimately about
+respecting yourself and your teammates. Be considerate.
+
+If you found this article to be useful, please consider [supporting my efforts
+efforts](https://github.com/sponsors/spacejam) to share knowledge and
+productionize cutting edge database research with implementations in Rust :)
