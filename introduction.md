@@ -23,7 +23,7 @@ In `Cargo.toml`, add sled to the dependencies section:
 
 ```toml
 [dependencies]
-sled = "0.31"
+sled = "0.34"
 ```
 
 Now, in your Rust code:
