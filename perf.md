@@ -1342,7 +1342,7 @@ Also see [Brendan Gregg's page on
 flamegraphs](http://www.brendangregg.com/flamegraphs.html).  He has probably
 done more than anyone in recent years to help people to better understand their
 system's performance. His book [Systems Performance: Enterprise and the
-Cloud](https://www.amazon.com/gp/product/0133390098/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0133390098&linkCode=as2&tag=tylerneely06-20&linkId=4af03a7e62f4c60b080de384c582e721]
+Cloud](https://www.amazon.com/gp/product/0133390098/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0133390098&linkCode=as2&tag=tylerneely06-20&linkId=4af03a7e62f4c60b080de384c582e721)
 is also extremely high quality, especially chapter 2: Methodology.
 
 #### deletion profiling
