@@ -1345,7 +1345,7 @@ system's performance. His book [Systems Performance: Enterprise and the
 Cloud](https://www.amazon.com/gp/product/0133390098/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0133390098&linkCode=as2&tag=tylerneely06-20&linkId=4af03a7e62f4c60b080de384c582e721]
 is also extremely high quality, especially chapter 2: Methodology.
 
-#### deleteion profiling
+#### deletion profiling
 
 This is one of my favorites because it's so easy when it's applicable.
 Just comment out some function call that you are curious about the cost of
