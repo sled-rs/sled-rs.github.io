@@ -249,7 +249,7 @@ Instead of saying "faster" it is helpful to speak in terms of latency or
 throughput, because both may be used to describe "speed" but they are in
 [direct opposition to each other](#latency-vs-throughput). Speaking
 in terms of relative percentages is often misleading. What does
-A (90) is 10% lower than B(100) mean if we don't know their actual
+A (90) is 10% lower than B (100) mean if we don't know their actual
 values? Many people would think that B is `1.1 * A`, but in this case,
 `1.1 * 90 = 99`. It is generally better to describe comparative measurements
 in terms of ratios rather than relative percentages.
@@ -1164,7 +1164,7 @@ can lead to **starvation** where some threads are unable to make as much
 progress.
 
 This has implications for mutexes, among many other things. Modern mutex
-implementations tend to implement some for of fairness-mechanism to combat this
+implementations tend to implement some sort of fairness-mechanism to combat this
 effect. It can actually be quite expensive to have a mutex be completely fair,
 as it requires maintaining essentially a FIFO queue that mediates access, and
 bending on the FIFO property can lower the effort of using a mutex, which
@@ -1181,7 +1181,7 @@ This section is essentially about multiplexing. Sometimes we want to share some
 physical or logical resource among multiple computational tasks. Maybe we want
 to run multiple operating systems, processes, threads, or async tasks on a
 single CPU. Or maybe we want to multiplex multiple data streams on a single
-TCP socket, Maybe we want to map some set of files or objects onto some set of
+TCP socket. Maybe we want to map some set of files or objects onto some set of
 storage devices.
 
 Our ability to map the appropriate tasks to appropriate computational resources
@@ -1397,6 +1397,6 @@ that is unlikely to be possible without extreme expense. Gaining confidence in p
 positive impacts before investing significant effort is ultimately about
 respecting yourself and your teammates. Be considerate.
 
-If you found this article to be useful, please consider [supporting my efforts
+If you found this article to be useful, please consider [supporting my
 efforts](https://github.com/sponsors/spacejam) to share knowledge and
 productionize cutting edge database research with implementations in Rust :)
