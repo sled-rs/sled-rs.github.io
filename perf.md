@@ -472,7 +472,7 @@ depend on it.
 
 Further reading:
 
-* [The Tail at Scale by Jeff Dean](https://cseweb.ucsd.edu/~gmporter/classes/fa17/cse124/post/schedule/p74-dean.pdf)
+* [The Tail at Scale by Jeff Dean](https://research.google/pubs/pub40801)
 
 ### productivity
 
