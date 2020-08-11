@@ -890,8 +890,8 @@ mutexes, etc...) then your parallelism gains will be negatively impacted. So, to
 properly take advantage of parallelism, we must minimize the amount of work we
 spend waiting for a shared resource, and blocking on other tasks to complete,
 or paying costs of merging parallel work together. Less sharing at all means
-more throughput because things can run independently of each other sled tries
-to share very little across requests.
+more throughput because things can run independently of each other.
+sled tries to share very little across requests for this reason.
 
 ## amdahl's law
 
@@ -906,7 +906,7 @@ that result is known.
 
 Calculating the result of multiplying and dividing many numbers with each other
 is completely parallelizable because we can start operating on sub-arrays of
-arguments, and then combine the results at the end
+arguments, and then combine the results at the end.
 
 Fun fact: our CPUs aggressively predict inputs to operations and start executing
 their results before knowing if the guesses are correct. The better we can
@@ -918,7 +918,7 @@ plausible.
 There are sometimes parts of our programs that can be parallelized, while
 others must be executed in a serial fashion. Amdahl's law shows that throwing
 more resources at a workload will not usually cause that workload to complete
-in a proportional fraction of time
+in a proportional fraction of time.
 
 The main takeaway:
 
@@ -946,7 +946,7 @@ down](art/usl.png)](http://www.perfdynamics.com/Manifesto/USLscalability.html)
 The USL shows that concurrency can reduce possible gains of parallelism by
 introducing contention and coherency costs. Contention is effectively the
 part of the program that Amdahl's law describes as being non-parallelizable.
-Coherency is
+Coherency is the cost of putting it all back together.
 
 [Frank McSherry
 showed](http://www.frankmcsherry.org/graph/scalability/cost/2015/02/04/COST2.html)
