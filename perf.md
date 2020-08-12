@@ -1103,18 +1103,17 @@ pointer, perform some work, and then use an atomic compare-and-swap (CAS)
 operation to try to mutate the shared pointer to a new modified value if the
 predicted previous value was properly guessed. If some other thread changed the
 pointer already, the guess about the previous value will be incorrect, and the
-operation will either retry using the new value or it will fail. We will cover
-lock-free and wait-free algorithms in much more detail below.
+operation will either retry using the new value or it will fail.
 
 Speculation is a key tenant in taking advantage of parallel hardware, because
 it lets us make bets about contention and possibly throw work away if our bet
 didn't pan out.
 
 Most modern databases are usually designed to perform transactions using
-optimistic concurrency control. Rather than taking out locks for items involved
+Optimistic Concurrency Control. Rather than taking out locks for items involved
 in a transaction, OCC avoids locks but performs a validation step before
 committing the transaction to check whether other transactions have interfered.
-The assumption is that for some workloads, transactions will tend to operate on
+The assumption is that for many workloads, transactions tend to operate on
 non-overlapping data. Validating the correctness of a transaction does not
 require using locks, either.
 
@@ -1139,7 +1138,7 @@ avoids paying concurrency control costs for operations that only require
 single-key linearizability, rather than serializability.
 
 Speculation can cause wasted work to happen if the bet being made tends not
-to result in less overall work. For example, if 10000 threads are all trying
+to result in less overall work. For example, if 10,000 threads are all trying
 to do a compare and swap on a single item in a tight loop, it will result in only
 a single one of those threads ever succeeding after reading the last successful
 value, and all of the other threads failing to make any progress despite doing work.
@@ -1150,7 +1149,7 @@ execution techniques when contention is measured to result in a lot of wasted wo
 
 ##### fairness
 
-In the above example with 10k threads in a CAS loop on a piece of memory, there
+In the above example with 10,000 threads in a CAS loop on a piece of memory, there
 is a significant chance to introduce unfairness where only a single thread tends
 to be winning the CAS loops. This is because it takes time for updates to
 memory to propagate to other cores and sockets, and the core where the
@@ -1174,6 +1173,8 @@ tricks to get some fairness for a very low price. For instance, the
 fairness"](https://github.com/Amanieu/parking_lot/blob/4cb93a3268fcf79c823a3d860047e3e88c626b51/src/mutex.rs#L20-L35)
 where fairness measures are taken occasionally, which adds a very low amount of
 overhead while achieving a useful amount of fairness in many situations.
+
+Combatting sarvation is also a vital aspect of a high quality scheduler.
 
 ### scheduling
 
@@ -1286,7 +1287,7 @@ flying at night and in storms. Learning to trust the readings of the instruments
 is vital for staying alive over many flights in varied weather situations.
 
 Programmers often don't do this. We tend to make random guesses based on some
-primitive feeling, resulting in many hours lost pursuing the impossible
+primitive feeling, resulting in months or years lost pursuing the impossible
 over the course of a career. But our machines are quite amenable to measurement,
 and we can avoid wasting so much of our lives by paying better attention to
 metrics that are easy to acquire before spending time optimizing something
