@@ -91,7 +91,7 @@ performance-sensitive engineering. I think most folks will learn something new.
 I know I have. And, part of why I wrote this is to have a single place with a
 memorable URL where I can return to when I forget most of this stuff. More
 importantly, when I unfurl fiery screeds in random internet comments I want to
-have an intimidating reference to which I can mercilesly link.
+have an intimidating reference to which I can mercilessly link.
 
 I initially wrote this guide for the Rust ecosystem, where many people are now
 trying their hands at optimization for the first time. But nearly all of this document
@@ -117,7 +117,7 @@ inspired by the writings of
 [Pedro Ramalhete](http://concurrencyfreaks.blogspot.com/2019/11/is-left-right-generic-concurrency.html)
 and others.
 
-## shameless, emotionally annihiliating begging
+## shameless, emotionally annihilating begging
 
 My workshops have been the primary means of supporting sled development costs.
 Unfortunately, the workshops are now on hold due to coronavirus concerns. If
@@ -232,7 +232,7 @@ is known as [E-Prime](https://en.wikipedia.org/wiki/E-Prime).
 Don't say "lock-free queues are faster than mutex-backed queues", say "on
 hardware H with T threads running in tight loops performing operations O, our
 specific lock-free queue has been measured to achieve a latency distribution of
-X1 and our specicific mutex-backed queue has been measured to achieve a latency
+X1 and our specific mutex-backed queue has been measured to achieve a latency
 distribution of X2." It's likely your lock-free queue will sometimes perform
 worse than a well-made mutex-backed queue given certain hardware, contention
 and many other factors. What does "perform worse" even mean? Different use
@@ -594,7 +594,7 @@ measurements:
   initially allocated a bunch of memory, the latency to keep accessing that
   memory will increase by 60ish ns as requests need to be proxied through
   the original socket.
-  * threads can be pinned to sets of cores on specfic sockets to avoid
+  * threads can be pinned to sets of cores on specific sockets to avoid
     being migrated to another socket.
 
 If an experiment were a pure math function, changing our input variables would
@@ -963,7 +963,7 @@ Further reading:
 
 ### the RUM conjecture
 
-When designing access methods for datastructures, databases, systems, etc...
+When designing access methods for data structures, databases, systems, etc...
 there exists a 3-way trade-off:
 
 * **r**ead overhead
@@ -986,7 +986,7 @@ Let's apply this to an in-memory ordered map:
   scan through the list and replace it with a compacted version, freeing
   the space used by the previous updates and base node, and removing any
   outdated versions / deleting items that had a tombstone placed in the update list.
-  Readers pay compaction costs, writers procede quickly.
+  Readers pay compaction costs, writers proceed quickly.
 * **R** + **M**: we trade slow writes for fast reads and low space.
   This is effectively how classic B-tree databases often work.
   Writers must take out a lock to update the tree node, and
@@ -1000,7 +1000,7 @@ Let's apply this to an in-memory ordered map:
 
 There are many ways to push this work around to achieve desired properties,
 and we can generally be pretty creative in how we do so, but we can't
-be absolutely optimial in all 3 categories.
+be absolutely optimal in all 3 categories.
 
 This trade-off was introduced in the paper [Designing Access Methods: The RUM
 Conjecture](https://stratos.seas.harvard.edu/files/stratos/files/rum.pdf) and
@@ -1128,11 +1128,11 @@ thread, you will need to perform some form of concurrency control anyway.
 However, you can build databases to be auto-tuning and avoid any concurrency
 control as long as only a single thread is running, and "upgrade" the system
 dynamically when the database is being accessed by multiple threads by
-reconfiguring the concurrency control configuration, and then waiting for any
+re-configuring the concurrency control configuration, and then waiting for any
 threads operating under the old configuration to finish their tasks to avoid
 conflicts. The sled database allows lock-free single-key operations to avoid
 performing any concurrency control usually, but as soon as a single multi-key
-transaction happens, it reconfigures the system to perform concurrency control
+transaction happens, it re-configures the system to perform concurrency control
 for all operations. This embodies the philosophy of "pay for what you use" and
 avoids paying concurrency control costs for operations that only require
 single-key linearizability, rather than serializability.
@@ -1157,7 +1157,7 @@ last change happened is the one with the most up-to-date cache. It has
 a significant head-start compared to other threads that need to wait for this
 propagation latency before being able to make a bet in their own CAS attempt.
 
-This is said to be **unfair** because most threads will see very little propress,
+This is said to be **unfair** because most threads will see very little progress,
 but the previous thread to "win" gets a higher chance to keep winning. This
 can lead to **starvation** where some threads are unable to make as much
 progress.
@@ -1174,7 +1174,7 @@ fairness"](https://github.com/Amanieu/parking_lot/blob/4cb93a3268fcf79c823a3d860
 where fairness measures are taken occasionally, which adds a very low amount of
 overhead while achieving a useful amount of fairness in many situations.
 
-Combatting sarvation is also a vital aspect of a high quality scheduler.
+Combating starvation is also a vital aspect of a high quality scheduler.
 
 ### scheduling
 
@@ -1191,7 +1191,7 @@ computational dependencies into its computational results.
 
 key terms:
 
-* oversubscription
+* over-subscription
 * interactive workloads
 * batch workloads
 
@@ -1225,7 +1225,7 @@ want to prioritize work in this way:
   all else, you want to oversubscribe and accept a lot more work to reduce the
   frequency that your system bottoms out and has no work to do. You don’t want
   to accept work that you’re not servicing though if latency is a priority, and
-  you want a smaller TCP backlog that will fill up and provide backpressure for
+  you want a smaller TCP backlog that will fill up and provide back-pressure for
   your load balancer so it can do its job.
 
 The general idea is to keep the pipeline busy, but favoring work toward
@@ -1251,7 +1251,7 @@ that in some situations where you are scheduling small computational work
 (cough cough Rust async tasks) you may want to use an Erlang-style
 **work-balancing** strategy that has perfect knowledge of the progress
 that various threads are making, and from a centralized position
-performing rebalancing work.
+performing re-balancing work.
 
 There are also two other forms of work balancing:
 * **work requesting** is when a thread that runs out of work
@@ -1315,7 +1315,7 @@ somewhere:
 
 Flamegraphs are useful for visualizing the costs associated with specific code
 locations by showing the expense in terms of visual area. They are a good
-"first glance" at where a program may be spenting a lot of time, instructions,
+"first glance" at where a program may be spending a lot of time, instructions,
 or some other measurable resource but there are a number of caveats that come
 with their interpretation, and you should only use them as a kind of flashlight
 that may illuminate where specific costs are arising in code. In many cases,
