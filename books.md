@@ -8,7 +8,7 @@
 These books have been vital for shaping my mental models in ways that have helped me to build systems such as sled.
 
 In addition to significantly increasing your credibility among peers, using the following links will help to support
-the project.
+the project, as they are Amazon Associates links that send a kickback to the project. As an Amazon Associate I earn from qualifying purchases.
 
 # Correct Systems
 

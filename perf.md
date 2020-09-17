@@ -769,7 +769,7 @@ sampled to compare against our other measurements.
 
 Here are two nice checklists from Raj Jain's [The Art of Computer Systems
 Performance
-Analysis](https://www.amazon.com/gp/product/0471503363/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0471503363&linkCode=as2&tag=tylerneely06-20&linkId=0d675f8c937657c859d970d48e81ca87):
+Analysis](https://www.amazon.com/gp/product/0471503363/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=0471503363&linkCode=as2&tag=tylerneely06-20&linkId=0d675f8c937657c859d970d48e81ca87) (Amazon Associate link which sends the sled project a kickback):
 
 Box 2.2 Steps for a Performance Evaluation Study
 
