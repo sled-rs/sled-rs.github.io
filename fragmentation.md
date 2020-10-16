@@ -37,8 +37,7 @@ incompatible futures frameworks. To run a Scala project was to live in a
 perpetual war of enforcing coding guidelines.
 
 Eventually, Rust decided to use Finagle as the inspiration for its futures
-approach. I see a lot of parallels between the Rust async history and the Scala
-async history that it was based on, especially in terms of this friction
-between camps. I'm anticipating a similar Typeclassopedia-style split to happen
-if Rust gets GATs, which are isomorphic to HKTs.
-
+approach. I see a lot of parallels between the Rust async history and Scala's,
+especially in terms of this friction between camps. I'm anticipating a similar
+Typeclassopedia-style split to happen if Rust gets GATs, which are isomorphic
+to HKTs.
