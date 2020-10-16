@@ -39,7 +39,7 @@ Additionally, by minimizing costs for users, you often improve your own experien
     * can be installed with `cargo install cargo-tree`
   * nobody wants to build 50 more dependencies when they are trying to solve a simple problem with your crate
 1. don't use async unless it makes something measurable better
-  * hint: never
+  * I have never found this to be true for any of my work on distributed systems or databases.
 1. don't be a framework unless you actually need to create an entire ecosystem
   that is simply incompatible with the standard forms of computation, such as
   stackful coroutines or something.
