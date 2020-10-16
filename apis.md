@@ -38,8 +38,8 @@ Additionally, by minimizing costs for users, you often improve your own experien
   * `cargo tree` is great for guiding pruning efforts
     * can be installed with `cargo install cargo-tree`
   * nobody wants to build 50 more dependencies when they are trying to solve a simple problem with your crate
-1. provide compability with both sync and async code by using concrete types that implement `Future`
-  * don't force users to use a whole big framework just to run your code
+1. don't use async unless it makes something measurable better
+  * hint: never
 1. don't be a framework unless you actually need to create an entire ecosystem
   that is simply incompatible with the standard forms of computation, such as
   stackful coroutines or something.
