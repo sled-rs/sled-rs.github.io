@@ -1,4 +1,4 @@
-# sled theoretical performance guide
+# theoretical aspects of performance engineering
 
 Tyler Neely, 2020
 
