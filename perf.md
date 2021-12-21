@@ -483,7 +483,7 @@ Further reading:
  devices. This is both its blessing and its
  curse: We do not have to worry about the
  physical realization of our software designs,
- but we also no longer have physical laws the
+ but we also no longer have physical laws that
  limit the complexity of these designs—the latter
  could be called the curse of flexibility
  - Nancy Leveson, 1995
