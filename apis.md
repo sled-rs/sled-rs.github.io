@@ -32,6 +32,8 @@ Additionally, by minimizing costs for users, you often improve your own experien
   * every macro is its own DSL that users must learn.
 1. minimize use of non-std traits
   * traits are not as bad as macros, but they still force users to take their minds off their code to learn your trait
+1. minimize use of proc macros
+  * while proc macros enable a lot of cuteness, that cuteness tends to compose extremely poorly, increases documentation effort, increases debugging effort, tends to break caching and generally make compile times explode.
 1. minimize use of conditional compilation
   * difficult to document, difficult to test
 1. be considerate of the dependency tree that you force on your users
