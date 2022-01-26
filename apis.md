@@ -12,6 +12,12 @@ in a new library to hopefully solve a problem may involve many costs. Often
 these costs are higher than the value of the library itself. We can take
 concrete steps to minimize these costs.
 
+The virtues we should strive for:
+* easy to understand for beginners without needing to traverse documentation beyond looking at provided function signatures on docs.rs.
+* composes well with plain functions and data structures - old code should play nicely with new code if it will retain its value.
+* easy to debug - the people who I talk to tend to spend around 3-4x more time on debugging than writing code. If you spend less time debugging than this while working on non-hobby code, I recommend educating yourself on responsible [fuzzing](https://fuzzcheck.neocities.org/tutorial1_function.html), [model-based testing](https://medium.com/@tylerneely/reliable-systems-series-model-based-property-testing-e89a433b360), [fault injection](https://docs.rs/fail/latest/fail/) and [simulation](https://sled.rs/simulation) techniques for writing higher quality software.
+* quick to compile so we have a lower chance of getting distracted between runs
+
 Additionally, by minimizing costs for users, you often improve your own experience as an author.
 
 1. minimize use of generics
@@ -48,6 +54,7 @@ Additionally, by minimizing costs for users, you often improve your own experien
 1. don't be a framework unless you actually need to create an entire ecosystem
   that is simply incompatible with the standard forms of computation, such as
   stackful coroutines or something.
+1. be extremely cautious of any subcommunity that is obsessed with solving problems with their own stuff rather than pre-existing problems that their stuff makes easier to solve.
 
 ```
 Experts write baby code.
