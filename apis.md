@@ -42,7 +42,7 @@ Additionally, by minimizing costs for users, you often improve your own experien
   * nobody wants to build 50 more dependencies when they are trying to solve a simple problem with your crate
 1. don't use async unless it makes something measurable better
   * I have never found this to be true for any of my work on distributed systems or databases.
-  * It reduces composability, increses debugging costs, significantly increases reliance on non-std code for trivial functionality which in-turn exacerbates compilation latency.
+  * It reduces composability, increases debugging costs, significantly increases reliance on non-std code for trivial functionality which in-turn exacerbates compilation latency.
 1. be cautious about const generics in situations where you are unable to fuzz confidence-inspiring ranges
   * const parameters must be concrete at compile-time, making it high-friction to fuzz interesting values for them.
 1. don't be a framework unless you actually need to create an entire ecosystem
