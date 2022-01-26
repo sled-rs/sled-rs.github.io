@@ -1,6 +1,6 @@
 # Writing APIs in Rust
 
-by Tyler Neely on May 3 2020
+by Tyler Neely on May 3 2020, updated January 26 2022
 
 [![github](https://img.shields.io/github/stars/spacejam/sled.svg?style=social)](https://github.com/spacejam/sled)
 [![documentation](https://docs.rs/sled/badge.svg)](https://docs.rs/sled)
