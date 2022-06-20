@@ -20,6 +20,8 @@ The virtues we should strive for:
 
 Additionally, by minimizing costs for users, you often improve your own experience as an author.
 
+## General Guidelines
+
 1. minimize use of generics
   * infectious, your users will have to refactor any structure that may contain your types
   * removing generics improves compile times
