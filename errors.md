@@ -229,9 +229,9 @@ cropped up during its execution, because it has already handled them. We do not
 want our handled errors to propagate any information at all to the caller,
 because it only allows them to begin to be concerned about an issue that they
 are not responsible for handling in any way. This is as unhealthy in programs
-as it is in human relationships, as it encourages core concerns to be handled
-by an entity that has less information about that core concern, resulting in
-harmful coupling and more bugs over time.
+as it can sometimes be in human interpersonal communication, as it encourages
+core concerns to be handled by an entity that has less information about that
+core concern, resulting in harmful coupling and more bugs over time.
 
 Any callers of the `caller()` function will start to get compiler warnings
 if they don't use the `Result` that is returned:
@@ -287,7 +287,7 @@ fn main() -> Result<(), ()> {
 ```
 
 This gets rid of the compiler warning. However, this is buggy, because the
-`caller()` function already wipes its own ass, and we don't need to care about
+`caller()` function already handles its concerns, and we don't need to care about
 its success. If the intent is to call it 3 times, we now are encouraged by the
 compiler to early-exit as well.
 
