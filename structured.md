@@ -44,7 +44,7 @@ use {
 
 ## zero-copy serialization
 
-We will be relying on Google's [zerocopy](docs.rs/zerocopy) crate
+We will be relying on Google's [zerocopy](https://docs.rs/zerocopy) crate
 to work with our high-level Rust structures. It's a nice way for
 treating unaligned slices of bytes as high-level Rust structures that may
 be mutated in-place. It's quite light-weight.
