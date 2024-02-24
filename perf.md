@@ -1355,7 +1355,7 @@ Just comment out some function call that you are curious about the cost of
 and see how much faster the program runs. If it's not any faster,
 it doesn't matter how much you improve it, you will never be able to match
 the benefit of completely deleting it (assuming it doesn't get compiled away anyway).
-Don't spent time speeding up code that does not contribute to the overall
+Don't spend time speeding up code that does not contribute to the overall
 cost.
 
 #### causal profiling
